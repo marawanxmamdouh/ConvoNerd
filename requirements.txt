@@ -1,0 +1,10 @@
+langchain
+PyPDF2
+python-dotenv
+streamlit
+faiss-cpu
+altair
+tiktoken
+huggingface-hub
+FlagEmbedding
+sentence-transformers
