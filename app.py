@@ -2,6 +2,7 @@ import os
 
 import streamlit as st
 import torch
+from auto_gptq import AutoGPTQForCausalLM
 from dotenv import load_dotenv
 from langchain import HuggingFacePipeline, PromptTemplate, FAISS
 from langchain.chains import ConversationalRetrievalChain
@@ -9,8 +10,8 @@ from langchain.document_loaders import PyPDFDirectoryLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from transformers import AutoModelForSeq2SeqLM, pipeline, TextStreamer
 from transformers import AutoTokenizer
+from transformers import pipeline, TextStreamer
 
 from html_templates import css, bot_template, user_template
 
@@ -75,9 +76,23 @@ def get_vectorstore(text_chunks):
 
 def get_conversation_chain(vectorstore):
     # Load your local model from disk
-    # model_name = 'TheBloke/Llama-2-13B-chat-GPTQ'
-    model_name = 'google/flan-t5-base'
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    # model_name = 'google/flan-t5-base'
+    # model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
+    model_name = 'TheBloke/Llama-2-13B-chat-GPTQ'
+    model_basename = "model"
+
+    model = AutoGPTQForCausalLM.from_quantized(
+        model_name,
+        revision="main",
+        model_basename=model_basename,
+        use_safetensors=True,
+        trust_remote_code=True,
+        inject_fused_attention=False,
+        device=DEVICE,
+        quantize_config=None,
+    )
+
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
     streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
     text_pipeline = pipeline("text2text-generation",
