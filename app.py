@@ -3,7 +3,6 @@ import os
 
 import streamlit as st
 import torch
-from auto_gptq import AutoGPTQForCausalLM
 from dotenv import load_dotenv
 from langchain import HuggingFacePipeline, PromptTemplate, FAISS
 from langchain.chains import ConversationalRetrievalChain
@@ -11,9 +10,9 @@ from langchain.document_loaders import PyPDFDirectoryLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from transformers import AutoTokenizer
-from transformers import pipeline, TextStreamer
+from transformers import pipeline
 
+from deal_with_urls import extract_text_from_urls
 from html_templates import css, bot_template, user_template
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -57,7 +56,13 @@ def get_text_chunks(text):
         chunk_overlap=200,
         length_function=len
     )
-    chunks = text_splitter.split_documents(text)
+
+    # check if the text is a string
+    if isinstance(text, str):
+        chunks = text_splitter.split_text(text)
+    else:
+        chunks = text_splitter.split_documents(text)
+
     return chunks
 
 
@@ -71,7 +76,13 @@ def get_vectorstore(text_chunks):
         encode_kwargs=encode_kwargs
     )
     st.write(f"Loaded embeddings model: {text_chunks}")
-    vectorstore = FAISS.from_documents(text_chunks, embeddings)
+
+    # check if the text is a list
+    if isinstance(text_chunks, list):
+        vectorstore = FAISS.from_texts(text_chunks, embeddings)
+    else:
+        vectorstore = FAISS.from_documents(text_chunks, embeddings)
+
     return vectorstore
 
 
@@ -153,16 +164,23 @@ def validate_urls(urls):
 
 def main():
     load_dotenv()
-    st.set_page_config(page_title="Chat with multiple PDFs",
+    st.set_page_config(page_title="",
                        page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
 
+    # Define the state of the app
+    pdf_docs = None
+    urls_list = []
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = None
+    if 'n_urls' not in st.session_state:
+        st.session_state.n_urls = 1
+    if 'urls' not in st.session_state:
+        st.session_state.urls = []
 
-    st.header("Chat with multiple PDFs :books:")
+    st.header("")
     user_question = st.text_input("Ask a question about your documents:")
 
     if user_question and st.session_state.conversation:
@@ -172,27 +190,79 @@ def main():
         st.error("Please upload your PDFs first and click on 'Process'")
 
     with st.sidebar:
-        st.subheader("Your documents")
-        pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+        # create a radio group for the different input options
+        st.subheader("Input options")
+        input_options_rg = ["Upload PDFs", "Enter URLs"]
+        input_option = st.radio("", input_options_rg)
+
+        # create divider to separate the input options from the rest
+        st.markdown("---")
+
+        if input_option == "Upload PDFs":
+            st.subheader("Your documents")
+            pdf_docs = st.file_uploader(
+                "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
 
         if st.button("Process"):
             if pdf_docs:
                 with st.spinner("Processing"):
                     # get pdf text
                     raw_text = get_pdf_text(pdf_docs)
+        elif input_option == "Enter URLs":
+            st.subheader("Enter URLs")
+            if st.button(label="add"):
+                st.session_state.n_urls += 1
+                st.experimental_rerun()
 
-                    # get the text chunks
-                    text_chunks = get_text_chunks(raw_text)
+            for i in range(st.session_state.n_urls):
+                urls_list.append(st.text_input("", placeholder=f"URL {i + 1}", label_visibility="collapsed"))
+                print(urls_list)
 
-                    # create vector store
-                    vectorstore = get_vectorstore(text_chunks)
+            if st.button(label="remove"):
+                if st.session_state.n_urls > 1:
+                    st.session_state.n_urls -= 1
+                    st.experimental_rerun()
 
-                    # create conversation chain
-                    st.session_state.conversation = get_conversation_chain(vectorstore)
+        if st.button("Process", use_container_width=True):
+            if input_options_rg == "Upload PDFs":
+                if pdf_docs:  # or link:
+                    with st.spinner("Processing"):
+                        # get pdf text
+                        raw_text = get_pdf_text(pdf_docs)
 
-            else:
-                st.warning("Please upload your PDFs first and click on 'Process'")
+                        # get the text chunks
+                        text_chunks = get_text_chunks(raw_text)
+
+                        # create vector store
+                        vectorstore = get_vectorstore(text_chunks)
+
+                        # create conversation chain
+                        st.session_state.conversation = get_conversation_chain(vectorstore)
+                else:
+                    st.warning("Please upload your PDFs first and click on 'Process'")
+
+            elif input_option == "Enter URLs":
+                with st.spinner("Processing"):
+                    # check if the user entered a url
+                    print(len(urls_list))
+                    if len(urls_list) == 1 and urls_list[0] == "":
+                        st.warning("Please enter at least one URL")
+
+                    else:
+                        # validate the urls
+                        urls_list = validate_urls(urls_list)
+
+                        # get the text from the urls
+                        text = extract_text_from_urls(urls_list)
+
+                        # get the text chunks
+                        text_chunks = get_text_chunks(text)
+
+                        # create vector store
+                        vectorstore = get_vectorstore(text_chunks)
+
+                        # create conversation chain
+                        st.session_state.conversation = get_conversation_chain(vectorstore)
 
 
 if __name__ == '__main__':
