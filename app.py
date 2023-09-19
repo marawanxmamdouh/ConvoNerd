@@ -1,3 +1,4 @@
+import validators
 import os
 
 import streamlit as st
@@ -135,6 +136,19 @@ def handle_userinput(user_question):
             st.write(bot_template.replace(
                 "{{MSG}}", message.content), unsafe_allow_html=True)
             print(message.content)
+
+
+def validate_urls(urls):
+    """Validate URLs and return a list of valid URLs."""
+    valid_urls = []
+    for url in urls:
+        # Check if the URL is valid
+        if validators.url(url):
+            valid_urls.append(url)
+        else:
+            st.warning(f"Invalid URL: {url}")
+
+    return valid_urls
 
 
 def main():
