@@ -86,44 +86,29 @@ def get_vectorstore(text_chunks):
     return vectorstore
 
 
-def get_conversation_chain(vectorstore):
+def get_conversation_chain_ggml(vectorstore):
     # Load your local model from disk
-    # model_name = 'google/flan-t5-base'
-    # model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    # Download the model from https://huggingface.co/TheBloke/Llama-2-13B-chat-GGML/tree/main,
+    # model_path = 'models/llama-2-13b-chat.ggmlv3.q4_1.bin'  # if you have more ram use this model
+    model_path = 'models/llama-2-13b-chat.ggmlv3.q2_K.bin'
 
-    model_name = 'TheBloke/Llama-2-13B-chat-GPTQ'
-    model_basename = "model"
-
-    model = AutoGPTQForCausalLM.from_quantized(
-        model_name,
-        revision="main",
-        model_basename=model_basename,
-        use_safetensors=True,
-        trust_remote_code=True,
-        inject_fused_attention=False,
+    model = CTransformers(
+        model=model_path,
+        model_type='llama',
         device=DEVICE,
-        quantize_config=None,
+        config={
+            'max_new_tokens': 1024,
+            'temperature': 0.1,
+            'top_p': 0.2,
+            'repetition_penalty': 1.5,
+        }
     )
-
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-    streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
-    text_pipeline = pipeline("text2text-generation",
-                             model=model,
-                             tokenizer=tokenizer,
-                             max_new_tokens=1024,
-                             temperature=0,
-                             top_p=0.95,
-                             repetition_penalty=1.15,
-                             streamer=streamer,
-                             )
-
-    llm = HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": 0})
 
     memory = ConversationBufferMemory(
         memory_key='chat_history', return_messages=True)
 
     conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
+        llm=model,
         retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
         memory=memory,
         chain_type="stuff",
