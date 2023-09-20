@@ -38,13 +38,13 @@ def extract_text_from_urls(urls):
         return all_content
 
 
-# Example usage:
-url = ['https://en.wikipedia.org/wiki/Machine_learning', 'https://en.wikipedia.org/wiki/Artificial_neural_network']
-text = extract_text_from_urls(url)
-
-if text:
-    print(text)
-
-# export the visible_text
-with open('textoo.txt', 'w', encoding='utf-8') as f:
-    f.write(text)
+# # Example usage:
+# url = ['https://en.wikipedia.org/wiki/Machine_learning', 'https://en.wikipedia.org/wiki/Artificial_neural_network']
+# text = extract_text_from_urls(url)
+#
+# if text:
+#     print(text)
+#
+# # export the visible_text
+# with open('textoo.txt', 'w', encoding='utf-8') as f:
+#     f.write(text)
