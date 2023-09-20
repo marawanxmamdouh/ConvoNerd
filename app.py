@@ -3,14 +3,16 @@ import os
 import streamlit as st
 import torch
 import validators
+from auto_gptq import AutoGPTQForCausalLM
 from dotenv import load_dotenv
-from langchain import PromptTemplate, FAISS
-from langchain.chains import ConversationalRetrievalChain
+from langchain import PromptTemplate, FAISS, HuggingFacePipeline
+from langchain.chains import ConversationalRetrievalChain, RetrievalQA
 from langchain.document_loaders import PyPDFDirectoryLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.llms import CTransformers
 from langchain.memory import ConversationBufferMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from transformers import AutoTokenizer, TextStreamer, pipeline
 
 from deal_with_urls import extract_text_from_urls
 from html_templates import css, bot_template, user_template
@@ -19,14 +21,40 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
 
 # %%
-custom_template = """Given the following conversation and a follow up question, rephrase the follow up question to be 
-a standalone question. At the end of standalone question add this 'Answer the question in English language.' If you do 
-not know the answer reply with 'I am sorry'. Chat History: {chat_history} Follow Up Input: {question} Standalone 
-question:"""
+# custom_template = """Given the following conversation and a follow up question, rephrase the follow up question to be
+# a standalone question. At the end of standalone question add this 'Answer the question in English language.' If you do
+# not know the answer reply with 'I am sorry'. Chat History: {chat_history} Follow Up Input: {question} Standalone
+# question:"""
 
-# %%
+DEFAULT_SYSTEM_PROMPT = """
+You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
 
-prompt = PromptTemplate.from_template(template=custom_template)  # , input_variables=["context", "question"]
+If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.
+""".strip()
+
+
+def generate_prompt(prompt: str, system_prompt: str = DEFAULT_SYSTEM_PROMPT) -> str:
+    return f"""
+[INST] <<SYS>>
+{system_prompt}
+<</SYS>>
+
+{prompt} [/INST]
+""".strip()
+
+SYSTEM_PROMPT = ("Use the following pieces of context to answer the question at the end. If you don't know the answer, "
+                 "just say that you don't know, don't try to make up an answer.")
+
+template = generate_prompt(
+    """
+{chat_history}
+
+Question: {question}
+""",
+    system_prompt=SYSTEM_PROMPT,
+)
+
+prompt = PromptTemplate(template=template, input_variables=["chat_history", "question"])
 
 
 # %%
@@ -90,7 +118,8 @@ def get_conversation_chain_ggml(vectorstore):
     # Load your local model from disk
     # Download the model from https://huggingface.co/TheBloke/Llama-2-13B-chat-GGML/tree/main,
     # model_path = 'models/llama-2-13b-chat.ggmlv3.q2_K.bin'
-    model_path = 'models/llama-2-13b-chat.ggmlv3.q4_1.bin'
+    # model_path = 'models/llama-2-13b-chat.ggmlv3.q4_1.bin'
+    model_path = 'models/llama-2-7b-chat.ggmlv3.q8_0.bin'
 
     model = CTransformers(
         model=model_path,
@@ -98,9 +127,9 @@ def get_conversation_chain_ggml(vectorstore):
         device=DEVICE,
         config={
             'max_new_tokens': 1024,
-            'temperature': 0.1,
-            'top_p': 0.2,
-            'repetition_penalty': 1.5,
+            'temperature': 0.0,
+            'top_p': 0.95,
+            'repetition_penalty': 1.15,
         }
     )
 
@@ -145,6 +174,29 @@ def validate_urls(urls):
             st.warning(f"Invalid URL: {url}")
 
     return valid_urls
+
+
+def get_conversation_chain_huggingface(vectorstore):
+    pass
+
+
+def get_conversation_chain_openai(vectorstore):
+    pass
+
+
+def create_conversation_chain_with_selected_model(vectorstore, model_options_spinner):
+    if model_options_spinner == 'Llama-2-13B-chat-GPTQ (GPU required)':
+        # st.session_state.conversation = get_conversation_chain_gptq(vectorstore)
+        print('the selected model is: Llama-2-13B-chat-GPTQ (GPU required)')
+    elif model_options_spinner == 'Llama-2-13B-chat-GGML (CPU only)':
+        st.session_state.conversation = get_conversation_chain_ggml(vectorstore)
+        print('the selected model is: Llama-2-13B-chat-GGML (CPU only)')
+    elif model_options_spinner == 'HuggingFace Hub (Online)':
+        st.session_state.conversation = get_conversation_chain_huggingface(vectorstore)
+        print('the selected model is: HuggingFace Hub (Online)')
+    elif model_options_spinner == 'OpenAI API (Online)':
+        st.session_state.conversation = get_conversation_chain_openai(vectorstore)
+        print('the selected model is: OpenAI API (Online)')
 
 
 def main():
@@ -208,7 +260,7 @@ def main():
 
         # Create a radio group for the different models
         st.subheader("Select a Model")
-        model_options = ["Llama-2-13B-chat-GGML (GPU required)", "Llama-2-13B-chat-GPTQ (CPU only)",
+        model_options = ["Llama-2-13B-chat-GPTQ (GPU required)", "Llama-2-13B-chat-GGML (CPU only)",
                          'HuggingFace Hub (Online)', 'OpenAI API (Online)']
 
         model_options_spinner = st.selectbox("", model_options)
@@ -230,7 +282,7 @@ def main():
                         vectorstore = get_vectorstore(text_chunks)
 
                         # create a conversation chain
-                        st.session_state.conversation = get_conversation_chain_ggml(vectorstore)
+                        create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
                 else:
                     st.warning("Please upload your PDFs first and click on 'Process'")
 
@@ -255,7 +307,7 @@ def main():
                         vectorstore = get_vectorstore(text_chunks)
 
                         # create a conversation chain
-                        st.session_state.conversation = get_conversation_chain_ggml(vectorstore)
+                        create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
 
 
 if __name__ == '__main__':
