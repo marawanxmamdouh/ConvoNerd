@@ -1,16 +1,16 @@
-import validators
 import os
 
 import streamlit as st
 import torch
+import validators
 from dotenv import load_dotenv
-from langchain import HuggingFacePipeline, PromptTemplate, FAISS
+from langchain import PromptTemplate, FAISS
 from langchain.chains import ConversationalRetrievalChain
 from langchain.document_loaders import PyPDFDirectoryLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
+from langchain.llms import CTransformers
 from langchain.memory import ConversationBufferMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from transformers import pipeline
 
 from deal_with_urls import extract_text_from_urls
 from html_templates import css, bot_template, user_template
@@ -77,8 +77,8 @@ def get_vectorstore(text_chunks):
     )
     st.write(f"Loaded embeddings model: {text_chunks}")
 
-    # check if the text is a list
-    if isinstance(text_chunks, list):
+    # check if the text is a list of strings or a list of lists of strings
+    if isinstance(text_chunks, list) and isinstance(text_chunks[0], str):
         vectorstore = FAISS.from_texts(text_chunks, embeddings)
     else:
         vectorstore = FAISS.from_documents(text_chunks, embeddings)
@@ -89,8 +89,8 @@ def get_vectorstore(text_chunks):
 def get_conversation_chain_ggml(vectorstore):
     # Load your local model from disk
     # Download the model from https://huggingface.co/TheBloke/Llama-2-13B-chat-GGML/tree/main,
-    # model_path = 'models/llama-2-13b-chat.ggmlv3.q4_1.bin'  # if you have more ram use this model
-    model_path = 'models/llama-2-13b-chat.ggmlv3.q2_K.bin'
+    # model_path = 'models/llama-2-13b-chat.ggmlv3.q2_K.bin'
+    model_path = 'models/llama-2-13b-chat.ggmlv3.q4_1.bin'
 
     model = CTransformers(
         model=model_path,
@@ -188,11 +188,6 @@ def main():
             pdf_docs = st.file_uploader(
                 "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
 
-        if st.button("Process"):
-            if pdf_docs:
-                with st.spinner("Processing"):
-                    # get pdf text
-                    raw_text = get_pdf_text(pdf_docs)
         elif input_option == "Enter URLs":
             st.subheader("Enter URLs")
             if st.button(label="add"):
@@ -208,8 +203,21 @@ def main():
                     st.session_state.n_urls -= 1
                     st.experimental_rerun()
 
+        # create divider to separate the input options from the rest
+        st.markdown("---")
+
+        # Create a radio group for the different models
+        st.subheader("Select a Model")
+        model_options = ["Llama-2-13B-chat-GGML (GPU required)", "Llama-2-13B-chat-GPTQ (CPU only)",
+                         'HuggingFace Hub (Online)', 'OpenAI API (Online)']
+
+        model_options_spinner = st.selectbox("", model_options)
+
+        # create divider to separate the input options from the rest
+        st.markdown("---")
+
         if st.button("Process", use_container_width=True):
-            if input_options_rg == "Upload PDFs":
+            if input_option == "Upload PDFs":
                 if pdf_docs:  # or link:
                     with st.spinner("Processing"):
                         # get pdf text
@@ -221,14 +229,14 @@ def main():
                         # create vector store
                         vectorstore = get_vectorstore(text_chunks)
 
-                        # create conversation chain
-                        st.session_state.conversation = get_conversation_chain(vectorstore)
+                        # create a conversation chain
+                        st.session_state.conversation = get_conversation_chain_ggml(vectorstore)
                 else:
                     st.warning("Please upload your PDFs first and click on 'Process'")
 
             elif input_option == "Enter URLs":
                 with st.spinner("Processing"):
-                    # check if the user entered a url
+                    # check if the user entered an url
                     print(len(urls_list))
                     if len(urls_list) == 1 and urls_list[0] == "":
                         st.warning("Please enter at least one URL")
@@ -246,8 +254,8 @@ def main():
                         # create vector store
                         vectorstore = get_vectorstore(text_chunks)
 
-                        # create conversation chain
-                        st.session_state.conversation = get_conversation_chain(vectorstore)
+                        # create a conversation chain
+                        st.session_state.conversation = get_conversation_chain_ggml(vectorstore)
 
 
 if __name__ == '__main__':
