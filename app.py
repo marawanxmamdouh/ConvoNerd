@@ -20,7 +20,7 @@ print(DEVICE)
 
 # %%
 custom_template = """Given the following conversation and a follow up question, rephrase the follow up question to be 
-a standalone question. At the end of standalone question add this 'Answer the question in German language.' If you do 
+a standalone question. At the end of standalone question add this 'Answer the question in English language.' If you do 
 not know the answer reply with 'I am sorry'. Chat History: {chat_history} Follow Up Input: {question} Standalone 
 question:"""
 
