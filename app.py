@@ -163,6 +163,53 @@ def get_conversation_chain_ggml(vectorstore):
     return conversation_chain
 
 
+def get_conversation_chain_gptq(vectorstore):
+    # Load your local model from disk
+    model_name = 'TheBloke/Llama-2-13B-chat-GPTQ'
+    model_basename = "model"
+
+    model = AutoGPTQForCausalLM.from_quantized(
+        model_name,
+        revision="main",
+        model_basename=model_basename,
+        use_safetensors=True,
+        trust_remote_code=True,
+        inject_fused_attention=False,
+        device=DEVICE,
+        quantize_config=None,
+    )
+
+    # model_name = 'google/flan-t5-base'
+    # model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+    text_pipeline = pipeline("text2text-generation",
+                             model=model,
+                             tokenizer=tokenizer,
+                             max_new_tokens=1024,
+                             temperature=0,
+                             top_p=0.95,
+                             repetition_penalty=1.15,
+                             streamer=streamer,
+                             )
+
+    llm = HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": 0})
+
+    memory = ConversationBufferMemory(
+        memory_key='chat_history', return_messages=True)
+
+    conversation_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
+        memory=memory,
+        chain_type="stuff",
+        condense_question_prompt=prompt,
+    )
+
+    return conversation_chain
+
+
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
     print(response)
@@ -201,7 +248,7 @@ def get_conversation_chain_openai(vectorstore):
 
 def create_conversation_chain_with_selected_model(vectorstore, model_options_spinner):
     if model_options_spinner == 'Llama-2-13B-chat-GPTQ (GPU required)':
-        # st.session_state.conversation = get_conversation_chain_gptq(vectorstore)
+        st.session_state.conversation = get_conversation_chain_gptq(vectorstore)
         print('the selected model is: Llama-2-13B-chat-GPTQ (GPU required)')
     elif model_options_spinner == 'Llama-2-13B-chat-GGML (CPU only)':
         st.session_state.conversation = get_conversation_chain_ggml(vectorstore)
