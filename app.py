@@ -1,4 +1,5 @@
 import os
+import time
 
 import streamlit as st
 import torch
@@ -51,6 +52,23 @@ Question: {question}
 prompt = PromptTemplate(template=template, input_variables=["question"])
 
 
+# %%
+def show_temp_success_message(message: str, delay: int):
+
+    """
+    Create an empty container with a success message and empty it after a delay.
+
+    Parameters:
+    message (str): The success message to display in the container.
+    Delay (int): The time in seconds to wait before clearing the container.
+
+    Returns:
+    None
+    """
+    container = st.empty()
+    container.success(message)
+    time.sleep(delay)
+    container.empty()
 
 
 # %%
@@ -64,7 +82,9 @@ def get_pdf_text(pdf_docs):
             os.mkdir('uploaded_files')
         with open(os.path.join('uploaded_files', uploaded_file.name), 'wb') as f:
             f.write(uploaded_file.getvalue())
-        st.success('File has been uploaded and saved to the session.')
+
+        # show a success message for 2 seconds and then hide it.
+        show_temp_success_message(f"File uploaded successfully: {uploaded_file.name}", 2)
 
     # load the pdfs
     loder = PyPDFDirectoryLoader("uploaded_files")
@@ -267,6 +287,10 @@ def main():
             if input_option == "Upload PDFs":
                 if pdf_docs:  # or link:
                     with st.spinner("Processing"):
+
+                        # start the timer
+                        start_time = time.time()
+
                         # get pdf text
                         raw_text = get_pdf_text(pdf_docs)
 
@@ -278,6 +302,11 @@ def main():
 
                         # create a conversation chain
                         create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
+
+                        # Show a processing-done message and time taken for 5 seconds
+                        show_temp_success_message(
+                            f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+
                 else:
                     st.warning("Please upload your PDFs first and click on 'Process'")
 
@@ -289,6 +318,10 @@ def main():
                         st.warning("Please enter at least one URL")
 
                     else:
+
+                        # start the timer
+                        start_time = time.time()
+
                         # validate the urls
                         urls_list = validate_urls(urls_list)
 
@@ -303,6 +336,10 @@ def main():
 
                         # create a conversation chain
                         create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
+
+                        # Show a processing-done message and time taken for 5 seconds
+                        show_temp_success_message(
+                            f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
 
 
 if __name__ == '__main__':
