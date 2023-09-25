@@ -6,9 +6,9 @@ import torch
 import validators
 from auto_gptq import AutoGPTQForCausalLM
 from dotenv import load_dotenv
-from langchain import PromptTemplate, FAISS, HuggingFacePipeline
-from langchain.chains import ConversationalRetrievalChain, RetrievalQA
 from langchain import PromptTemplate, FAISS, HuggingFacePipeline, HuggingFaceHub
+from langchain.chains import ConversationalRetrievalChain
+from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import PyPDFDirectoryLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.llms import CTransformers
@@ -254,7 +254,17 @@ def get_conversation_chain_huggingface(vectorstore):
 
 
 def get_conversation_chain_openai(vectorstore):
-    pass
+    llm = ChatOpenAI()
+
+    memory = ConversationBufferMemory(
+        memory_key='chat_history', return_messages=True)
+
+    conversation_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(),
+        memory=memory
+    )
+    return conversation_chain
 
 
 def create_conversation_chain_with_selected_model(vectorstore, model_options_spinner):
