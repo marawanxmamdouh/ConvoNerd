@@ -21,11 +21,6 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
 
 # %%
-# custom_template = """Given the following conversation and a follow up question, rephrase the follow up question to be
-# a standalone question. At the end of standalone question add this 'Answer the question in English language.' If you do
-# not know the answer reply with 'I am sorry'. Chat History: {chat_history} Follow Up Input: {question} Standalone
-# question:"""
-
 DEFAULT_SYSTEM_PROMPT = """
 You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
 
@@ -42,19 +37,20 @@ def generate_prompt(prompt: str, system_prompt: str = DEFAULT_SYSTEM_PROMPT) -> 
 {prompt} [/INST]
 """.strip()
 
+
 SYSTEM_PROMPT = ("Use the following pieces of context to answer the question at the end. If you don't know the answer, "
                  "just say that you don't know, don't try to make up an answer.")
 
 template = generate_prompt(
     """
-{chat_history}
-
 Question: {question}
 """,
     system_prompt=SYSTEM_PROMPT,
 )
 
-prompt = PromptTemplate(template=template, input_variables=["chat_history", "question"])
+prompt = PromptTemplate(template=template, input_variables=["question"])
+
+
 
 
 # %%
@@ -148,8 +144,7 @@ def get_conversation_chain_ggml(vectorstore):
 
 
 def handle_userinput(user_question):
-    response = st.session_state.conversation({'question': user_question,
-                                              'chat_history': st.session_state.chat_history})
+    response = st.session_state.conversation({'question': user_question})
     print(response)
     st.session_state.chat_history = response['chat_history']
 
