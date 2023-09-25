@@ -8,6 +8,7 @@ from auto_gptq import AutoGPTQForCausalLM
 from dotenv import load_dotenv
 from langchain import PromptTemplate, FAISS, HuggingFacePipeline
 from langchain.chains import ConversationalRetrievalChain, RetrievalQA
+from langchain import PromptTemplate, FAISS, HuggingFacePipeline, HuggingFaceHub
 from langchain.document_loaders import PyPDFDirectoryLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.llms import CTransformers
@@ -239,7 +240,17 @@ def validate_urls(urls):
 
 
 def get_conversation_chain_huggingface(vectorstore):
-    pass
+    llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature": 0.1, "max_length": 1024})
+
+    memory = ConversationBufferMemory(
+        memory_key='chat_history', return_messages=True)
+
+    conversation_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(),
+        memory=memory
+    )
+    return conversation_chain
 
 
 def get_conversation_chain_openai(vectorstore):
