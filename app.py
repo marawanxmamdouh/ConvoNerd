@@ -15,7 +15,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from transformers import AutoTokenizer, TextStreamer, pipeline
 
 from deal_with_urls import extract_text_from_urls
-from html_templates import css, bot_template, user_template
+from html_templates import css
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
@@ -150,12 +150,12 @@ def handle_userinput(user_question):
 
     for i, message in enumerate(st.session_state.chat_history):
         if i % 2 == 0:
-            st.write(user_template.replace(
-                "{{MSG}}", message.content), unsafe_allow_html=True)
+            st.chat_message("human").write(message.content)
         else:
-            st.write(bot_template.replace(
-                "{{MSG}}", message.content), unsafe_allow_html=True)
-            print(message.content)
+            # Only keep the part that comes after 'Helpful Answer: '
+            answer = message.content.split('Helpful Answer:', 1)[-1]
+            st.chat_message("assistant").write(answer)
+            print(answer)
 
 
 def validate_urls(urls):
