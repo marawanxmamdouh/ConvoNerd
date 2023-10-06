@@ -18,7 +18,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from transformers import AutoTokenizer, TextStreamer, pipeline
 
 from deal_with_urls import extract_text_from_urls
-from html_templates import css
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
@@ -289,7 +288,6 @@ def main():
     load_dotenv()
     st.set_page_config(page_title="",
                        page_icon=":books:")
-    st.write(css, unsafe_allow_html=True)
 
     # Define the state of the app
     pdf_docs = None
