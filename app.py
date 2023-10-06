@@ -112,6 +112,7 @@ def get_text_chunks(text):
 
 
 def get_vectorstore(text_chunks):
+    vectorstore = None
     model_name = "BAAI/bge-small-en"
     model_kwargs = {'device': DEVICE}
     encode_kwargs = {'normalize_embeddings': True}  # set True to compute cosine similarity
@@ -122,11 +123,14 @@ def get_vectorstore(text_chunks):
     )
     st.write(f"Loaded embeddings model: {text_chunks}")
 
-    # check if the text is a list of strings or a list of lists of strings
-    if isinstance(text_chunks, list) and isinstance(text_chunks[0], str):
-        vectorstore = FAISS.from_texts(text_chunks, embeddings)
+    if text_chunks:
+        # check if the text is a list of strings or a list of lists of strings
+        if isinstance(text_chunks, list) and isinstance(text_chunks[0], str):
+            vectorstore = FAISS.from_texts(text_chunks, embeddings)
+        else:
+            vectorstore = FAISS.from_documents(text_chunks, embeddings)
     else:
-        vectorstore = FAISS.from_documents(text_chunks, embeddings)
+        st.error(f'Your input is empty: {len(text_chunks)}. Please use a different input and try again.')
 
     return vectorstore
 
