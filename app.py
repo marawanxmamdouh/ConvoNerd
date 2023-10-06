@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 
 import streamlit as st
@@ -299,6 +300,8 @@ def main():
         st.session_state.n_urls = 1
     if 'urls' not in st.session_state:
         st.session_state.urls = []
+    if 'text_area_input' not in st.session_state:
+        st.session_state.text_area_input = None
 
     st.header("")
     user_question = st.text_input("Ask a question about your documents:")
@@ -318,7 +321,7 @@ def main():
     with st.sidebar:
         # create a radio group for the different input options
         st.subheader("Input options")
-        input_options_rg = ["Upload PDFs", "Enter URLs"]
+        input_options_rg = ["Upload PDFs", "Enter URLs", "Enter text"]
         input_option = st.radio("", input_options_rg)
 
         # create divider to separate the input options from the rest
@@ -343,6 +346,10 @@ def main():
                 if st.session_state.n_urls > 1:
                     st.session_state.n_urls -= 1
                     st.experimental_rerun()
+
+        elif input_option == 'Enter text':
+            st.subheader("Enter text")
+            st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
 
         # create divider to separate the input options from the rest
         st.markdown("---")
@@ -414,6 +421,32 @@ def main():
                         # Show a processing-done message and time taken for 5 seconds
                         show_temp_success_message(
                             f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+
+            elif input_option == 'Enter text':
+                with st.spinner("Processing"):
+                    # check if the user entered a text
+                    print(f'the length of the text in the text area is: {len(st.session_state.text_area_input)}',
+                          file=sys.stderr)
+                    if st.session_state.text_area_input == "":
+                        st.warning("Please enter some text first")
+
+                    # start the timer
+                    start_time = time.time()
+
+                    text = st.session_state.text_area_input
+
+                    # get the text chunks
+                    text_chunks = get_text_chunks(text)
+
+                    # create vector store
+                    vectorstore = get_vectorstore(text_chunks)
+
+                    # create a conversation chain
+                    create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
+
+                    # Show a processing-done message and time taken for 5 seconds
+                    show_temp_success_message(
+                        f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
 
 
 if __name__ == '__main__':
