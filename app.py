@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from langchain import PromptTemplate, FAISS, HuggingFacePipeline, HuggingFaceHub
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
-from langchain.document_loaders import PyPDFDirectoryLoader
+from langchain.document_loaders import PyPDFDirectoryLoader, DirectoryLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.llms import CTransformers
 from langchain.memory import ConversationBufferMemory
@@ -391,7 +391,13 @@ def main():
                         start_time = time.time()
 
                         # get pdf text
-                        raw_text = get_pdf_text(pdf_docs)
+                        raw_text = []
+                        for doc in pdf_docs:
+                            if doc.type == 'application/pdf':
+                                raw_text.extend(get_pdf_text([doc]))
+                            elif doc.type == 'text/plain':
+                                raw_text.extend(
+                                    DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load())
 
                         # get the text chunks
                         text_chunks = get_text_chunks(raw_text)
