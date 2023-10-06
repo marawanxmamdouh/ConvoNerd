@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import time
 
@@ -73,21 +74,33 @@ def show_temp_success_message(message: str, delay: int):
 
 
 # %%
-def get_pdf_text(pdf_docs):
-    # delete old files
+def save_uploaded_files(uploaded_files):
+    # Delete the uploaded_files folder if it exists
     if os.path.isdir('uploaded_files'):
-        for f in os.listdir('uploaded_files'):
-            os.remove(os.path.join('uploaded_files', f))
-    for uploaded_file in pdf_docs:
+        shutil.rmtree('uploaded_files')
+
+    # Create the uploaded_files folder and the subfolders for the different file types
+    for uploaded_file in uploaded_files:
+        file_extension = os.path.splitext(uploaded_file.name)[1]
+        target_folder = os.path.join('uploaded_files', file_extension.replace('.', ''))
+
         if not os.path.isdir('uploaded_files'):
             os.mkdir('uploaded_files')
-        with open(os.path.join('uploaded_files', uploaded_file.name), 'wb') as f:
+        if not os.path.isdir(target_folder):
+            os.mkdir(target_folder)
+
+        target_file_path = os.path.join(target_folder, uploaded_file.name)
+
+        # Save the uploaded file to the target folder
+        with open(target_file_path, 'wb') as f:
             f.write(uploaded_file.getvalue())
 
         # show a success message for 2 seconds and then hide it.
         show_temp_success_message(f"File uploaded successfully: {uploaded_file.name}", 2)
 
-    # load the pdfs
+
+def get_pdf_text(pdf_docs):
+    # Load the PDFs from the folder
     loder = PyPDFDirectoryLoader("uploaded_files")
     docs = loder.load()
     st.write(f"Loaded {len(docs)} PDFs")
@@ -371,6 +384,7 @@ def main():
         if st.button("Process", use_container_width=True):
             if input_option == "Upload PDFs":
                 if pdf_docs:  # or link:
+                    save_uploaded_files(pdf_docs)
                     with st.spinner("Processing"):
 
                         # start the timer
