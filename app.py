@@ -144,10 +144,11 @@ def get_conversation_chain_ggml(vectorstore):
         model_type='llama',
         device=DEVICE,
         config={
-            'max_new_tokens': 1024,
-            'temperature': 0.0,
+            'max_new_tokens': 4096,
+            'temperature': 0.1,
             'top_p': 0.95,
             'repetition_penalty': 1.15,
+            'do_sample': True,
         }
     )
 
@@ -189,14 +190,15 @@ def get_conversation_chain_gptq(vectorstore):
     text_pipeline = pipeline("text2text-generation",
                              model=model,
                              tokenizer=tokenizer,
-                             max_new_tokens=1024,
-                             temperature=0,
+                             max_new_tokens=4096,
+                             temperature=0.1,
                              top_p=0.95,
+                             do_sample=True,
                              repetition_penalty=1.15,
                              streamer=streamer,
                              )
 
-    llm = HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": 0})
+    llm = HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": 0.1})
 
     memory = ConversationBufferMemory(
         memory_key='chat_history', return_messages=True)
