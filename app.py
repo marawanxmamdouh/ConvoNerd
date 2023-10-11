@@ -16,6 +16,7 @@ from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.llms import CTransformers
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from loguru import logger as log
 from transformers import AutoTokenizer, TextStreamer, pipeline
 
 from deal_with_urls import extract_text_from_urls
@@ -200,23 +201,18 @@ def get_conversation_chain_gptq(vectorstore):
 def handle_userinput(user_question):
     # Send the user question to the conversation chain and get the response
     response = st.session_state.conversation({'question': user_question})
-    print(response)
-    st.session_state.chat_history = response['chat_history']
+    log.debug(f'Response: {response}')
 
     # Get the question from the response
     st.session_state.my_chat_history.append(response['question'])
+    log.debug(f'{response["question"] = }')
 
-    for i, message in enumerate(st.session_state.chat_history):
-        if i % 2 == 0:
-            st.chat_message("human").write(message.content)
-        else:
-            # Only keep the part that comes after 'Helpful Answer: '
-            answer = message.content.split('Helpful Answer:', 1)[-1]
-            st.chat_message("assistant").write(answer)
-            print(answer)
     # Get the helpful answer from the response
     helpful_answer = response['answer'].split('Helpful Answer:')[-1]
     st.session_state.my_chat_history.append(helpful_answer)
+    log.debug(f'{helpful_answer = }')
+
+    # Update the chat_history in the memory with the new helpful answer
 
     # Display the response in the chat
     for i, message in enumerate(st.session_state.my_chat_history):
