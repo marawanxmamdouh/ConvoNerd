@@ -311,7 +311,7 @@ def main():
     if st.session_state.conversation:
         view_messages = st.expander("View the chain's chat history object", expanded=False)
         with view_messages:
-            st.write(st.session_state.chat_history)
+            st.write(st.session_state.my_chat_history)
 
     with st.sidebar:
         # create a radio group for the different input options
