@@ -14,7 +14,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import PyPDFDirectoryLoader, DirectoryLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.llms import CTransformers
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferWindowMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from transformers import AutoTokenizer, TextStreamer, pipeline
 
@@ -137,8 +137,7 @@ def get_conversation_chain_ggml(vectorstore):
         }
     )
 
-    memory = ConversationBufferMemory(
-        memory_key='chat_history', return_messages=True)
+    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
 
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=model,
@@ -185,8 +184,7 @@ def get_conversation_chain_gptq(vectorstore):
 
     llm = HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": 0.1})
 
-    memory = ConversationBufferMemory(
-        memory_key='chat_history', return_messages=True)
+    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
 
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
@@ -230,8 +228,7 @@ def validate_urls(urls):
 def get_conversation_chain_huggingface(vectorstore):
     llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature": 0.1, "max_length": 1024})
 
-    memory = ConversationBufferMemory(
-        memory_key='chat_history', return_messages=True)
+    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
 
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
@@ -244,8 +241,7 @@ def get_conversation_chain_huggingface(vectorstore):
 def get_conversation_chain_openai(vectorstore):
     llm = ChatOpenAI()
 
-    memory = ConversationBufferMemory(
-        memory_key='chat_history', return_messages=True)
+    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
 
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
