@@ -213,6 +213,9 @@ def handle_userinput(user_question):
     log.debug(f'{helpful_answer = }')
 
     # Update the chat_history in the memory with the new helpful answer
+    log.debug(f"Before: {st.session_state.conversation.memory.chat_memory.messages[-1].content = }")
+    st.session_state.conversation.memory.chat_memory.messages[-1].content = helpful_answer
+    log.debug(f"After: {st.session_state.conversation.memory.chat_memory.messages[-1].content = }")
 
     # Display the response in the chat
     for i, message in enumerate(st.session_state.my_chat_history):
