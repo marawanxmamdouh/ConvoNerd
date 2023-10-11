@@ -119,11 +119,8 @@ def get_vectorstore(text_chunks):
 
 
 def get_conversation_chain_ggml(vectorstore):
-    # Load your local model from disk
-    # Download the model from https://huggingface.co/TheBloke/Llama-2-13B-chat-GGML/tree/main,
-    # model_path = 'models/llama-2-13b-chat.ggmlv3.q2_K.bin'
-    # model_path = 'models/llama-2-13b-chat.ggmlv3.q4_1.bin'
-    model_path = 'models/llama-2-7b-chat.ggmlv3.q8_0.bin'
+    # Download the model from https://huggingface.co/TheBloke/Llama-2-13B-chat-GGUF/tree/main
+    model_path = 'models/llama-2-13b-chat.Q4_K_M.gguf'
 
     model = CTransformers(
         model=model_path,
