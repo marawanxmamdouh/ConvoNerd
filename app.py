@@ -20,6 +20,8 @@ from loguru import logger as log
 from transformers import AutoTokenizer, TextStreamer, pipeline
 
 from deal_with_urls import extract_text_from_urls
+from Json_text_extractor import JsonTextExtractor
+from youtube_transcript import extract_video_id, save_transcript_as_json
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
@@ -327,6 +329,8 @@ def main():
         st.session_state.urls = []
     if 'text_area_input' not in st.session_state:
         st.session_state.text_area_input = None
+    if 'youtube_url' not in st.session_state:
+        st.session_state.youtube_url = None
 
     st.header("")
     user_question = st.text_input("Ask a question about your documents:")
@@ -346,7 +350,7 @@ def main():
     with st.sidebar:
         # create a radio group for the different input options
         st.subheader("Input options")
-        input_options_rg = ["Upload PDFs", "Enter URLs", "Enter text"]
+        input_options_rg = ["Upload PDFs", "Enter URLs", "Enter text", "YouTube Video"]
         input_option = st.radio("", input_options_rg)
 
         # create divider to separate the input options from the rest
@@ -375,6 +379,10 @@ def main():
         elif input_option == 'Enter text':
             st.subheader("Enter text")
             st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
+
+        elif input_option == 'YouTube Video':
+            st.subheader("YouTube Video")
+            st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
 
         # create divider to separate the input options from the rest
         st.markdown("---")
@@ -479,6 +487,46 @@ def main():
                     # Show a processing-done message and time taken for 5 seconds
                     show_temp_success_message(
                         f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+
+            elif input_option == 'YouTube Video':
+                with st.spinner("Processing"):
+                    # check if the user entered an url or id
+                    if st.session_state.youtube_url == "":
+                        st.warning("Please enter a YouTube video URL or ID first")
+
+                    # start the timer
+                    start_time = time.time()
+
+                    # Extract the video id from the URL
+                    video_id = extract_video_id(st.session_state.youtube_url)
+
+                    # Save the transcript as a JSON file
+                    video_status = save_transcript_as_json(video_id)
+
+                    log.debug(f'{video_status = }')
+                    if video_status == False:
+                        st.warning("Transcript is not available for this video or this video is not available")
+                    else:
+                        show_temp_success_message(f"Fetched transcript for video: {video_id} successfully", 2)
+
+                        # Extract the text from the JSON file
+                        JsonTextExtractor().convert_transcript_to_txt()
+
+                        # Get the text from the transcript file
+                        text = DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load()
+
+                        # get the text chunks
+                        text_chunks = get_text_chunks(text)
+
+                        # create vector store
+                        vectorstore = get_vectorstore(text_chunks)
+
+                        # create a conversation chain
+                        create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
+
+                        # Show a processing-done message and time taken for 5 seconds
+                        show_temp_success_message(
+                            f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
 
 
 if __name__ == '__main__':
