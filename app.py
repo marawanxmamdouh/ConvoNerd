@@ -264,6 +264,36 @@ def get_conversation_chain_openai(vectorstore):
     return conversation_chain
 
 
+def get_conversation_chain_mistral(vectorstore):
+    # https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/tree/main
+    model_path = 'models/mistral-7b-instruct-v0.1.Q4_K_M.gguf'
+
+    model = CTransformers(
+        model=model_path,
+        model_type='mistral',
+        device=DEVICE,
+        do_sample=True,
+        config={
+            'max_new_tokens': 4096,
+            'temperature': 0.1,
+            'top_p': 0.95,
+            'repetition_penalty': 1.15,
+        }
+    )
+
+    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
+
+    conversation_chain = ConversationalRetrievalChain.from_llm(
+        llm=model,
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
+        memory=memory,
+        chain_type="stuff",
+        verbose=True,
+    )
+
+    return conversation_chain
+
+
 def create_conversation_chain_with_selected_model(vectorstore, model_options_spinner):
     if model_options_spinner == 'Llama-2-13B-chat-GPTQ (GPU required)':
         st.session_state.conversation = get_conversation_chain_gptq(vectorstore)
@@ -277,6 +307,9 @@ def create_conversation_chain_with_selected_model(vectorstore, model_options_spi
     elif model_options_spinner == 'OpenAI API (Online)':
         st.session_state.conversation = get_conversation_chain_openai(vectorstore)
         print('the selected model is: OpenAI API (Online)')
+    elif model_options_spinner == 'Mistral-7B (CPU only)':
+        st.session_state.conversation = get_conversation_chain_mistral(vectorstore)
+        print('the selected model is: Mistral-7B (CPU only)')
 
 
 def main():
@@ -351,8 +384,8 @@ def main():
 
         # Create a radio group for the different models
         st.subheader("Select a Model")
-        model_options = ["Llama-2-13B-chat-GPTQ (GPU required)", "Llama-2-13B-chat-GGML (CPU only)",
-                         'HuggingFace Hub (Online)', 'OpenAI API (Online)']
+        model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)', 
+                         'Llama-2-13B-chat-GGML (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
 
         model_options_spinner = st.selectbox("", model_options)
 
