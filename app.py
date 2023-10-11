@@ -8,7 +8,7 @@ import torch
 import validators
 from auto_gptq import AutoGPTQForCausalLM
 from dotenv import load_dotenv
-from langchain import PromptTemplate, FAISS, HuggingFacePipeline, HuggingFaceHub
+from langchain import FAISS, HuggingFacePipeline, HuggingFaceHub
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import PyPDFDirectoryLoader, DirectoryLoader
@@ -23,40 +23,9 @@ from deal_with_urls import extract_text_from_urls
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
 
-# %%
-DEFAULT_SYSTEM_PROMPT = """
-You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.
-
-If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.
-""".strip()
-
-
-def generate_prompt(prompt: str, system_prompt: str = DEFAULT_SYSTEM_PROMPT) -> str:
-    return f"""
-[INST] <<SYS>>
-{system_prompt}
-<</SYS>>
-
-{prompt} [/INST]
-""".strip()
-
-
-SYSTEM_PROMPT = ("Use the following pieces of context to answer the question at the end. If you don't know the answer, "
-                 "just say that you don't know, don't try to make up an answer.")
-
-template = generate_prompt(
-    """
-Question: {question}
-""",
-    system_prompt=SYSTEM_PROMPT,
-)
-
-prompt = PromptTemplate(template=template, input_variables=["question"])
-
 
 # %%
 def show_temp_success_message(message: str, delay: int):
-
     """
     Create an empty container with a success message and empty it after a delay.
 
