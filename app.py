@@ -198,9 +198,13 @@ def get_conversation_chain_gptq(vectorstore):
 
 
 def handle_userinput(user_question):
+    # Send the user question to the conversation chain and get the response
     response = st.session_state.conversation({'question': user_question})
     print(response)
     st.session_state.chat_history = response['chat_history']
+
+    # Get the question from the response
+    st.session_state.my_chat_history.append(response['question'])
 
     for i, message in enumerate(st.session_state.chat_history):
         if i % 2 == 0:
@@ -210,6 +214,14 @@ def handle_userinput(user_question):
             answer = message.content.split('Helpful Answer:', 1)[-1]
             st.chat_message("assistant").write(answer)
             print(answer)
+    # Get the helpful answer from the response
+    helpful_answer = response['answer'].split('Helpful Answer:')[-1]
+    st.session_state.my_chat_history.append(helpful_answer)
+
+    # Display the response in the chat
+    for i, message in enumerate(st.session_state.my_chat_history):
+        sender = "human" if i % 2 == 0 else "assistant"
+        st.chat_message(sender).write(message)
 
 
 def validate_urls(urls):
@@ -278,8 +290,8 @@ def main():
     urls_list = []
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = None
+    if "my_chat_history" not in st.session_state:
+        st.session_state.my_chat_history = []
     if 'n_urls' not in st.session_state:
         st.session_state.n_urls = 1
     if 'urls' not in st.session_state:
