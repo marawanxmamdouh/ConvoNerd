@@ -144,7 +144,7 @@ def get_conversation_chain_ggml(vectorstore):
         retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
         memory=memory,
         chain_type="stuff",
-        condense_question_prompt=prompt,
+        verbose=True,
     )
 
     return conversation_chain
@@ -191,7 +191,7 @@ def get_conversation_chain_gptq(vectorstore):
         retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
         memory=memory,
         chain_type="stuff",
-        condense_question_prompt=prompt,
+        verbose=True,
     )
 
     return conversation_chain
@@ -233,7 +233,8 @@ def get_conversation_chain_huggingface(vectorstore):
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=vectorstore.as_retriever(),
-        memory=memory
+        memory=memory,
+        verbose=True,
     )
     return conversation_chain
 
@@ -246,7 +247,8 @@ def get_conversation_chain_openai(vectorstore):
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=vectorstore.as_retriever(),
-        memory=memory
+        memory=memory,
+        verbose=True,
     )
     return conversation_chain
 
