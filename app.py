@@ -19,8 +19,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from loguru import logger as log
 from transformers import AutoTokenizer, TextStreamer, pipeline
 
-from deal_with_urls import extract_text_from_urls
 from Json_text_extractor import JsonTextExtractor
+from deal_with_urls import extract_text_from_urls
 from youtube_transcript import extract_video_id, save_transcript_as_json
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -48,8 +48,7 @@ def show_temp_success_message(message: str, delay: int):
 # %%
 def save_uploaded_files(uploaded_files):
     # Delete the uploaded_files folder if it exists
-    if os.path.isdir('uploaded_files'):
-        shutil.rmtree('uploaded_files')
+    shutil.rmtree('uploaded_files') if os.path.isdir('uploaded_files') else None
 
     # Create the uploaded_files folder and the subfolders for the different file types
     for uploaded_file in uploaded_files:
@@ -389,7 +388,7 @@ def main():
 
         # Create a radio group for the different models
         st.subheader("Select a Model")
-        model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)', 
+        model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)',
                          'Llama-2-13B-chat-GGML (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
 
         model_options_spinner = st.selectbox("", model_options)
