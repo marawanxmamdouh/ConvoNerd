@@ -1,9 +1,9 @@
-langchain~=0.0.275
+streamlit~=1.27.2
+torch~=2.1.0
+validators~=0.22.0
 python-dotenv~=1.0.0
-streamlit~=1.26.0
-
-torch~=2.0.1
-transformers~=4.32.1
-validators~=0.21.2
+langchain~=0.0.314
+transformers~=4.34.0
 requests~=2.31.0
+bs4~=0.0.1
 beautifulsoup4~=4.12.2
