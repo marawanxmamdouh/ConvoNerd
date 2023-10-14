@@ -338,9 +338,11 @@ def main():
         st.session_state.youtube_url = None
 
     st.header("")
-    user_question = st.text_input("Ask a question about your documents:")
+    with st.form(key='my_form', clear_on_submit=True):
+        user_question = st.text_input(label="Ask a question about your documents:")
+        submit_button = st.form_submit_button(label='Submit')
 
-    if user_question and st.session_state.conversation:
+    if (user_question or submit_button) and st.session_state.conversation:
         handle_userinput(user_question)
 
     elif user_question and not st.session_state.conversation:
