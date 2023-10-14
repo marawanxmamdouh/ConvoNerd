@@ -310,6 +310,12 @@ def create_conversation_chain_with_selected_model(vectorstore, model_options_spi
         print('the selected model is: Mistral-7B (CPU only)')
 
 
+def clear_cache():
+    keys = list(st.session_state.keys())
+    for key in keys:
+        st.session_state.pop(key)
+
+
 def main():
     load_dotenv()
     st.set_page_config(page_title="",
@@ -345,6 +351,9 @@ def main():
         view_messages = st.expander("View the chain's chat history object", expanded=False)
         with view_messages:
             st.write(st.session_state.my_chat_history)
+
+        # Add a button to clear the chat history and the conversation chain
+        st.button("Clear chat history", on_click=clear_cache)
 
     with st.sidebar:
         # create a radio group for the different input options
