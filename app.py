@@ -361,7 +361,7 @@ def main():
         # create a radio group for the different input options
         st.subheader("Input options")
         input_options_rg = ["Upload PDFs", "Enter URLs", "Enter text", "YouTube Video"]
-        input_option = st.radio("", input_options_rg)
+        input_option = st.radio("", input_options_rg, on_change=clear_cache)
 
         # create divider to separate the input options from the rest
         st.markdown("---")
