@@ -256,6 +256,16 @@ def clear_cache():
         st.session_state.pop(key)
 
 
+def process_text(text, model_options_spinner):
+    with st.spinner("Processing"):
+        start_time = time.time()
+        text_chunks = get_text_chunks(text)
+        vectorstore = get_vectorstore(text_chunks)
+        language_model = select_language_model(model_options_spinner)
+        create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
+        show_temp_success_message(f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+
+
 # %%:
 def main():
     load_dotenv()
@@ -345,144 +355,69 @@ def main():
             if input_option == "Upload PDFs":
                 if uploaded_files:  # or link:
                     save_uploaded_files(uploaded_files)
-                    with st.spinner("Processing"):
+                    # get pdf text
+                    raw_text = []
+                    for doc in uploaded_files:
+                        if doc.type == 'application/pdf':
+                            raw_text.extend(get_pdf_text([doc]))
+                        elif doc.type == 'text/plain':
+                            raw_text.extend(
+                                DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load())
 
-                        # start the timer
-                        start_time = time.time()
-
-                        # get pdf text
-                        raw_text = []
-                        for doc in uploaded_files:
-                            if doc.type == 'application/pdf':
-                                raw_text.extend(get_pdf_text([doc]))
-                            elif doc.type == 'text/plain':
-                                raw_text.extend(
-                                    DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load())
-
-                        # get the text chunks
-                        text_chunks = get_text_chunks(raw_text)
-
-                        # create vector store
-                        vectorstore = get_vectorstore(text_chunks)
-
-                        # create a LLM
-                        language_model = select_language_model(model_options_spinner)
-
-                        # create a conversation chain
-                        create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
-
-                        # Show a processing-done message and time taken for 5 seconds
-                        show_temp_success_message(
-                            f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+                    process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
                 else:
                     st.warning("Please upload your PDFs first and click on 'Process'")
 
             elif input_option == "Enter URLs":
-                with st.spinner("Processing"):
-                    # check if the user entered an url
-                    print(len(urls_list))
-                    if len(urls_list) == 1 and urls_list[0] == "":
-                        st.warning("Please enter at least one URL")
+                # check if the user entered an url
+                print(len(urls_list))
+                if len(urls_list) == 1 and urls_list[0] == "":
+                    st.warning("Please enter at least one URL")
 
-                    else:
+                else:
+                    # validate the urls
+                    urls_list = validate_urls(urls_list)
 
-                        # start the timer
-                        start_time = time.time()
+                    # get the text from the urls
+                    raw_text = extract_text_from_urls(urls_list)
 
-                        # validate the urls
-                        urls_list = validate_urls(urls_list)
-
-                        # get the text from the urls
-                        text = extract_text_from_urls(urls_list)
-
-                        # get the text chunks
-                        text_chunks = get_text_chunks(text)
-
-                        # create vector store
-                        vectorstore = get_vectorstore(text_chunks)
-
-                        # create a LLM
-                        language_model = select_language_model(model_options_spinner)
-
-                        # create a conversation chain
-                        create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
-
-                        # Show a processing-done message and time taken for 5 seconds
-                        show_temp_success_message(
-                            f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+                    process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
             elif input_option == 'Enter text':
-                with st.spinner("Processing"):
-                    # check if the user entered a text
-                    print(f'the length of the text in the text area is: {len(st.session_state.text_area_input)}',
-                          file=sys.stderr)
-                    if st.session_state.text_area_input == "":
-                        st.warning("Please enter some text first")
+                # check if the user entered a text
+                print(f'the length of the text in the text area is: {len(st.session_state.text_area_input)}',
+                      file=sys.stderr)
+                if st.session_state.text_area_input == "":
+                    st.warning("Please enter some text first")
+                raw_text = st.session_state.text_area_input
 
-                    # start the timer
-                    start_time = time.time()
-
-                    text = st.session_state.text_area_input
-
-                    # get the text chunks
-                    text_chunks = get_text_chunks(text)
-
-                    # create vector store
-                    vectorstore = get_vectorstore(text_chunks)
-
-                    # create a LLM
-                    language_model = select_language_model(model_options_spinner)
-
-                    # create a conversation chain
-                    create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
-
-                    # Show a processing-done message and time taken for 5 seconds
-                    show_temp_success_message(
-                        f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+                process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
             elif input_option == 'YouTube Video':
-                with st.spinner("Processing"):
-                    # check if the user entered an url or id
-                    if st.session_state.youtube_url == "":
-                        st.warning("Please enter a YouTube video URL or ID first")
+                # check if the user entered an url or id
+                if st.session_state.youtube_url == "":
+                    st.warning("Please enter a YouTube video URL or ID first")
 
-                    # start the timer
-                    start_time = time.time()
+                # Extract the video id from the URL
+                video_id = extract_video_id(st.session_state.youtube_url)
 
-                    # Extract the video id from the URL
-                    video_id = extract_video_id(st.session_state.youtube_url)
+                # Save the transcript as a JSON file
+                video_status = save_transcript_as_json(video_id)
 
-                    # Save the transcript as a JSON file
-                    video_status = save_transcript_as_json(video_id)
+                log.debug(f'{video_status = }')
+                if video_status == False:
+                    st.warning("Transcript is not available for this video or this video is not available")
+                else:
+                    show_temp_success_message(f"Fetched transcript for video: {video_id} successfully", 2)
 
-                    log.debug(f'{video_status = }')
-                    if video_status == False:
-                        st.warning("Transcript is not available for this video or this video is not available")
-                    else:
-                        show_temp_success_message(f"Fetched transcript for video: {video_id} successfully", 2)
+                    # Extract the text from the JSON file
+                    JsonTextExtractor().convert_transcript_to_txt()
 
-                        # Extract the text from the JSON file
-                        JsonTextExtractor().convert_transcript_to_txt()
+                    # Get the text from the transcript file
+                    raw_text = DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load()
 
-                        # Get the text from the transcript file
-                        text = DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load()
-
-                        # get the text chunks
-                        text_chunks = get_text_chunks(text)
-
-                        # create vector store
-                        vectorstore = get_vectorstore(text_chunks)
-
-                        # create a LLM
-                        language_model = select_language_model(model_options_spinner)
-
-                        # create a conversation chain
-                        create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
-
-                        # Show a processing-done message and time taken for 5 seconds
-                        show_temp_success_message(
-                            f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+                    process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
     # Create a form to get the user question
     with st.form(key='my_form', clear_on_submit=True):
