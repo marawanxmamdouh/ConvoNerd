@@ -261,7 +261,7 @@ def main():
                        page_icon=":books:")
 
     # Define the state of the app
-    pdf_docs = None
+    uploaded_files = None
     urls_list = []
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
@@ -307,7 +307,7 @@ def main():
 
         if input_option == "Upload PDFs":
             st.subheader("Your documents")
-            pdf_docs = st.file_uploader(
+            uploaded_files = st.file_uploader(
                 "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
 
         elif input_option == "Enter URLs":
@@ -348,8 +348,8 @@ def main():
 
         if st.button("Process", use_container_width=True):
             if input_option == "Upload PDFs":
-                if pdf_docs:  # or link:
-                    save_uploaded_files(pdf_docs)
+                if uploaded_files:  # or link:
+                    save_uploaded_files(uploaded_files)
                     with st.spinner("Processing"):
 
                         # start the timer
@@ -357,7 +357,7 @@ def main():
 
                         # get pdf text
                         raw_text = []
-                        for doc in pdf_docs:
+                        for doc in uploaded_files:
                             if doc.type == 'application/pdf':
                                 raw_text.extend(get_pdf_text([doc]))
                             elif doc.type == 'text/plain':
