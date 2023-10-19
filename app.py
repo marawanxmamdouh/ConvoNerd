@@ -192,7 +192,7 @@ def get_vectorstore(text_chunks):
     return vectorstore
 
 
-def handle_userinput(user_question):
+def handle_userinput(user_question, container):
     # Send the user question to the conversation chain and get the response
     response = st.session_state.conversation({'question': user_question})
     log.debug(f'Response: {response}')
@@ -214,7 +214,7 @@ def handle_userinput(user_question):
     # Display the response in the chat
     for i, message in enumerate(st.session_state.my_chat_history):
         sender = "human" if i % 2 == 0 else "assistant"
-        st.chat_message(sender).write(message)
+        container.chat_message(sender).write(message)
 
 
 def validate_urls(urls):
@@ -256,6 +256,7 @@ def clear_cache():
         st.session_state.pop(key)
 
 
+# %%:
 def main():
     load_dotenv()
     st.set_page_config(page_title="",
@@ -277,16 +278,9 @@ def main():
     if 'youtube_url' not in st.session_state:
         st.session_state.youtube_url = None
 
-    st.header("")
-    with st.form(key='my_form', clear_on_submit=True):
-        user_question = st.text_input(label="Ask a question about your documents:")
-        submit_button = st.form_submit_button(label='Submit')
-
-    if (user_question or submit_button) and st.session_state.conversation:
-        handle_userinput(user_question)
-
-    elif user_question and not st.session_state.conversation:
-        st.error("Please upload your PDFs first and click on 'Process'")
+    st.header("Chat with your documents")
+    chat_body = st.container()
+    chat_body.markdown("---")
 
     # Create a toggle button to show/hide the chat history object in session state
     if st.session_state.conversation:
@@ -489,6 +483,17 @@ def main():
                         # Show a processing-done message and time taken for 5 seconds
                         show_temp_success_message(
                             f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+
+    # Create a form to get the user question
+    with st.form(key='my_form', clear_on_submit=True):
+        user_question = st.text_input(label="Ask a question about your documents:")
+        submit_button = st.form_submit_button(label='Submit')
+
+    if (user_question or submit_button) and st.session_state.conversation:
+        handle_userinput(user_question, chat_body)
+
+    elif user_question and not st.session_state.conversation:
+        st.error("Please upload your PDFs first and click on 'Process'")
 
 
 if __name__ == '__main__':
