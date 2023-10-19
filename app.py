@@ -27,9 +27,14 @@ from youtube_transcript import extract_video_id, save_transcript_as_json
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
 
+# %%:
+config = {
+    'max_new_tokens': 4096, 'temperature': 0.1, 'top_p': 0.95,
+    'repetition_penalty': 1.15, 'context_length': 4096
+}
 
-# %%
 
+# %%:
 class LanguageModel(ABC):
     @abstractmethod
     def get_llm(self):
@@ -38,28 +43,24 @@ class LanguageModel(ABC):
 
 class HuggingFaceModel(LanguageModel):
     def get_llm(self):
-        return HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature": 0.1, "max_length": 1024})
+        return HuggingFaceHub(repo_id="google/flan-t5-xxl", config=config)
 
 
 class OpenAIModel(LanguageModel):
     def get_llm(self):
-        return ChatOpenAI()
+        return ChatOpenAI(config=config)
 
 
 class MistralModel(LanguageModel):
     def get_llm(self):
         model_path = 'models/mistral-7b-instruct-v0.1.Q4_K_M.gguf'
-        return CTransformers(model=model_path, model_type='mistral', device=DEVICE, do_sample=True,
-                             config={'max_new_tokens': 4096, 'temperature': 0.1, 'top_p': 0.95,
-                                     'repetition_penalty': 1.15})
+        return CTransformers(model=model_path, model_type='mistral', device=DEVICE, do_sample=True, config=config)
 
 
 class GgmlModel(LanguageModel):
     def get_llm(self):
         model_path = 'models/llama-2-13b-chat.Q4_K_M.gguf'
-        return CTransformers(model=model_path, model_type='llama', device=DEVICE, do_sample=True,
-                             config={'max_new_tokens': 4096, 'temperature': 0.1, 'top_p': 0.95,
-                                     'repetition_penalty': 1.15})
+        return CTransformers(model=model_path, model_type='llama', device=DEVICE, do_sample=True, config=config)
 
 
 class GptqModel(LanguageModel):
