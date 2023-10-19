@@ -375,7 +375,7 @@ def main():
                         language_model = select_language_model(model_options_spinner)
 
                         # create a conversation chain
-                        create_conversation_chain(vectorstore, language_model)
+                        create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
 
                         # Show a processing-done message and time taken for 5 seconds
                         show_temp_success_message(
@@ -412,7 +412,7 @@ def main():
                         language_model = select_language_model(model_options_spinner)
 
                         # create a conversation chain
-                        create_conversation_chain(vectorstore, language_model)
+                        create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
 
                         # Show a processing-done message and time taken for 5 seconds
                         show_temp_success_message(
@@ -441,7 +441,7 @@ def main():
                     language_model = select_language_model(model_options_spinner)
 
                     # create a conversation chain
-                    create_conversation_chain(vectorstore, language_model)
+                    create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
 
                     # Show a processing-done message and time taken for 5 seconds
                     show_temp_success_message(
@@ -484,7 +484,7 @@ def main():
                         language_model = select_language_model(model_options_spinner)
 
                         # create a conversation chain
-                        create_conversation_chain(vectorstore, language_model)
+                        create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
 
                         # Show a processing-done message and time taken for 5 seconds
                         show_temp_success_message(
