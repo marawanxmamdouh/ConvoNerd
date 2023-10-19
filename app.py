@@ -2,6 +2,7 @@ import os
 import shutil
 import sys
 import time
+from abc import ABC, abstractmethod
 
 import streamlit as st
 import torch
@@ -25,6 +26,77 @@ from youtube_transcript import extract_video_id, save_transcript_as_json
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
+
+
+# %%
+
+class LanguageModel(ABC):
+    @abstractmethod
+    def get_llm(self):
+        pass
+
+
+class HuggingFaceModel(LanguageModel):
+    def get_llm(self):
+        return HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature": 0.1, "max_length": 1024})
+
+
+class OpenAIModel(LanguageModel):
+    def get_llm(self):
+        return ChatOpenAI()
+
+
+class MistralModel(LanguageModel):
+    def get_llm(self):
+        model_path = 'models/mistral-7b-instruct-v0.1.Q4_K_M.gguf'
+        return CTransformers(model=model_path, model_type='mistral', device=DEVICE, do_sample=True,
+                             config={'max_new_tokens': 4096, 'temperature': 0.1, 'top_p': 0.95,
+                                     'repetition_penalty': 1.15})
+
+
+class GgmlModel(LanguageModel):
+    def get_llm(self):
+        model_path = 'models/llama-2-13b-chat.Q4_K_M.gguf'
+        return CTransformers(model=model_path, model_type='llama', device=DEVICE, do_sample=True,
+                             config={'max_new_tokens': 4096, 'temperature': 0.1, 'top_p': 0.95,
+                                     'repetition_penalty': 1.15})
+
+
+class GptqModel(LanguageModel):
+    def get_llm(self):
+        model_name = 'TheBloke/Llama-2-13B-chat-GPTQ'
+        model_basename = "model"
+        model = AutoGPTQForCausalLM.from_quantized(model_name, revision="main", model_basename=model_basename,
+                                                   use_safetensors=True, trust_remote_code=True,
+                                                   inject_fused_attention=False,
+                                                   device=DEVICE, quantize_config=None)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+        streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+        text_pipeline = pipeline("text2text-generation",
+                                 model=model,
+                                 tokenizer=tokenizer,
+                                 max_new_tokens=4096,
+                                 temperature=0.1,
+                                 top_p=0.95,
+                                 do_sample=True,
+                                 repetition_penalty=1.15,
+                                 streamer=streamer)
+        return HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": 0.1})
+
+
+class ConversationChainFactory:
+    @staticmethod
+    def get_conversation_chain(vectorstore, language_model: LanguageModel):
+        llm = language_model.get_llm()
+        memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
+        conversation_chain = ConversationalRetrievalChain.from_llm(
+            llm=llm,
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
+            memory=memory,
+            chain_type="stuff",
+            verbose=True,
+        )
+        return conversation_chain
 
 
 # %%
@@ -119,83 +191,6 @@ def get_vectorstore(text_chunks):
     return vectorstore
 
 
-def get_conversation_chain_ggml(vectorstore):
-    # Download the model from https://huggingface.co/TheBloke/Llama-2-13B-chat-GGUF/tree/main
-    model_path = 'models/llama-2-13b-chat.Q4_K_M.gguf'
-
-    model = CTransformers(
-        model=model_path,
-        model_type='llama',
-        device=DEVICE,
-        do_sample=True,
-        config={
-            'max_new_tokens': 4096,
-            'temperature': 0.1,
-            'top_p': 0.95,
-            'repetition_penalty': 1.15,
-        }
-    )
-
-    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
-
-    conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=model,
-        retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
-        memory=memory,
-        chain_type="stuff",
-        verbose=True,
-    )
-
-    return conversation_chain
-
-
-def get_conversation_chain_gptq(vectorstore):
-    # Load your local model from disk
-    model_name = 'TheBloke/Llama-2-13B-chat-GPTQ'
-    model_basename = "model"
-
-    model = AutoGPTQForCausalLM.from_quantized(
-        model_name,
-        revision="main",
-        model_basename=model_basename,
-        use_safetensors=True,
-        trust_remote_code=True,
-        inject_fused_attention=False,
-        device=DEVICE,
-        quantize_config=None,
-    )
-
-    # model_name = 'google/flan-t5-base'
-    # model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-    streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
-    text_pipeline = pipeline("text2text-generation",
-                             model=model,
-                             tokenizer=tokenizer,
-                             max_new_tokens=4096,
-                             temperature=0.1,
-                             top_p=0.95,
-                             do_sample=True,
-                             repetition_penalty=1.15,
-                             streamer=streamer,
-                             )
-
-    llm = HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": 0.1})
-
-    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
-
-    conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
-        memory=memory,
-        chain_type="stuff",
-        verbose=True,
-    )
-
-    return conversation_chain
-
-
 def handle_userinput(user_question):
     # Send the user question to the conversation chain and get the response
     response = st.session_state.conversation({'question': user_question})
@@ -234,80 +229,24 @@ def validate_urls(urls):
     return valid_urls
 
 
-def get_conversation_chain_huggingface(vectorstore):
-    llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature": 0.1, "max_length": 1024})
-
-    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
-
-    conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vectorstore.as_retriever(),
-        memory=memory,
-        verbose=True,
-    )
-    return conversation_chain
-
-
-def get_conversation_chain_openai(vectorstore):
-    llm = ChatOpenAI()
-
-    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
-
-    conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vectorstore.as_retriever(),
-        memory=memory,
-        verbose=True,
-    )
-    return conversation_chain
-
-
-def get_conversation_chain_mistral(vectorstore):
-    # https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/tree/main
-    model_path = 'models/mistral-7b-instruct-v0.1.Q4_K_M.gguf'
-
-    model = CTransformers(
-        model=model_path,
-        model_type='mistral',
-        device=DEVICE,
-        do_sample=True,
-        config={
-            'max_new_tokens': 4096,
-            'temperature': 0.1,
-            'top_p': 0.95,
-            'repetition_penalty': 1.15,
-        }
-    )
-
-    memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
-
-    conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=model,
-        retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
-        memory=memory,
-        chain_type="stuff",
-        verbose=True,
-    )
-
-    return conversation_chain
-
-
-def create_conversation_chain_with_selected_model(vectorstore, model_options_spinner):
+def select_language_model(model_options_spinner):
     if model_options_spinner == 'Llama-2-13B-chat-GPTQ (GPU required)':
-        st.session_state.conversation = get_conversation_chain_gptq(vectorstore)
-        print('the selected model is: Llama-2-13B-chat-GPTQ (GPU required)')
+        return GptqModel()
     elif model_options_spinner == 'Llama-2-13B-chat-GGML (CPU only)':
-        st.session_state.conversation = get_conversation_chain_ggml(vectorstore)
-        print('the selected model is: Llama-2-13B-chat-GGML (CPU only)')
+        return GgmlModel()
     elif model_options_spinner == 'HuggingFace Hub (Online)':
-        st.session_state.conversation = get_conversation_chain_huggingface(vectorstore)
-        print('the selected model is: HuggingFace Hub (Online)')
+        return HuggingFaceModel()
     elif model_options_spinner == 'OpenAI API (Online)':
-        st.session_state.conversation = get_conversation_chain_openai(vectorstore)
-        print('the selected model is: OpenAI API (Online)')
+        return OpenAIModel()
     elif model_options_spinner == 'Mistral-7B (CPU only)':
-        st.session_state.conversation = get_conversation_chain_mistral(vectorstore)
-        print('the selected model is: Mistral-7B (CPU only)')
+        return MistralModel()
+    else:
+        return None
+
+
+def create_conversation_chain(vectorstore, language_model):
+    if language_model:
+        st.session_state.conversation = ConversationChainFactory.get_conversation_chain(vectorstore, language_model)
 
 
 def clear_cache():
@@ -431,8 +370,11 @@ def main():
                         # create vector store
                         vectorstore = get_vectorstore(text_chunks)
 
+                        # create a LLM
+                        language_model = select_language_model(model_options_spinner)
+
                         # create a conversation chain
-                        create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
+                        create_conversation_chain(vectorstore, language_model)
 
                         # Show a processing-done message and time taken for 5 seconds
                         show_temp_success_message(
@@ -465,8 +407,11 @@ def main():
                         # create vector store
                         vectorstore = get_vectorstore(text_chunks)
 
+                        # create a LLM
+                        language_model = select_language_model(model_options_spinner)
+
                         # create a conversation chain
-                        create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
+                        create_conversation_chain(vectorstore, language_model)
 
                         # Show a processing-done message and time taken for 5 seconds
                         show_temp_success_message(
@@ -491,8 +436,11 @@ def main():
                     # create vector store
                     vectorstore = get_vectorstore(text_chunks)
 
+                    # create a LLM
+                    language_model = select_language_model(model_options_spinner)
+
                     # create a conversation chain
-                    create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
+                    create_conversation_chain(vectorstore, language_model)
 
                     # Show a processing-done message and time taken for 5 seconds
                     show_temp_success_message(
@@ -531,8 +479,11 @@ def main():
                         # create vector store
                         vectorstore = get_vectorstore(text_chunks)
 
+                        # create a LLM
+                        language_model = select_language_model(model_options_spinner)
+
                         # create a conversation chain
-                        create_conversation_chain_with_selected_model(vectorstore, model_options_spinner)
+                        create_conversation_chain(vectorstore, language_model)
 
                         # Show a processing-done message and time taken for 5 seconds
                         show_temp_success_message(
