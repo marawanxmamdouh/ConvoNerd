@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 from langchain import FAISS, HuggingFacePipeline, HuggingFaceHub
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
-from langchain.document_loaders import PyPDFDirectoryLoader, DirectoryLoader
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.llms import CTransformers
 from langchain.memory import ConversationBufferWindowMemory
@@ -22,6 +21,8 @@ from transformers import AutoTokenizer, TextStreamer, pipeline
 from youtube_transcript_api import TranscriptsDisabled
 
 from deal_with_urls import extract_text_from_urls
+from text_extraction.pdf_extractor import PDFTextExtractor
+from text_extraction.text_file_extractor import TextFileExtractor
 from text_extraction.youtube_extractor import YouTubeTextExtractor
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -156,15 +157,6 @@ def save_uploaded_files(uploaded_files):
 
         # show a success message for 2 seconds and then hide it.
         show_temp_success_message(f"File uploaded successfully: {uploaded_file.name}", 2)
-
-
-def get_pdf_text(pdf_docs):
-    # Load the PDFs from the folder
-    loder = PyPDFDirectoryLoader("uploaded_files")
-    docs = loder.load()
-    st.write(f"Loaded {len(docs)} PDFs")
-    st.write(f'Type: {type(docs)}')
-    return docs
 
 
 def get_text_chunks(text):
@@ -360,19 +352,23 @@ def get_raw_text_from_urls():
 def get_raw_text_from_pdfs():
     uploaded_files = st.session_state.uploaded_files
 
-    if uploaded_files:
-        save_uploaded_files(uploaded_files)
-        raw_text = []
-        for doc in uploaded_files:
-            if doc.type == 'application/pdf':
-                raw_text.extend(get_pdf_text([doc]))
-            elif doc.type == 'text/plain':
-                raw_text.extend(
-                    DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load())
-        return raw_text
-    else:
-        st.warning("Please upload your PDFs first and click on 'Process'")
+    if not uploaded_files:
+        st.warning("Please upload your files first and click on 'Process'")
         return
+
+    save_uploaded_files(uploaded_files)
+    raw_text = []
+    for doc in uploaded_files:
+        if doc.type == 'application/pdf':
+            pdf_extractor = PDFTextExtractor()
+            raw_text.extend(pdf_extractor.extract_text())
+        elif doc.type == 'text/plain' or doc.type == 'application/octet-stream':
+            txt_extractor = TextFileExtractor()
+            raw_text.extend(txt_extractor.extract_text(doc.name))
+        else:
+            st.warning(f"File type not supported yet {doc.name}")
+
+    return raw_text
 
 
 def get_raw_text(input_option):
