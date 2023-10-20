@@ -266,6 +266,58 @@ def process_text(text, model_options_spinner):
         show_temp_success_message(f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
 
 
+def render_input_ui(input_option):
+    """
+    Render the input UI based on the selected input option.
+    The input options are:
+        1. Upload PDFs
+        2. Enter URLs
+        3. Enter text
+        4. YouTube Video
+
+    Parameters
+    ----------
+    input_option : str
+        The selected input option from the radio group in the sidebar.
+
+    Returns
+    -------
+    None (Updates the session state variables)
+
+    """
+    if input_option == "Upload PDFs":
+        st.subheader("Your documents")
+        uploaded_files = st.file_uploader(
+            "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+        st.session_state.uploaded_files = uploaded_files
+
+    elif input_option == "Enter URLs":
+        st.subheader("Enter URLs")
+        if st.button(label="add"):
+            st.session_state.n_urls += 1
+            st.experimental_rerun()
+
+        urls_list = []
+        for i in range(st.session_state.n_urls):
+            urls_list.append(st.text_input("", placeholder=f"URL {i + 1}", label_visibility="collapsed"))
+            print(urls_list)
+
+        if st.button(label="remove"):
+            if st.session_state.n_urls > 1:
+                st.session_state.n_urls -= 1
+                st.experimental_rerun()
+
+        st.session_state.urls = urls_list
+
+    elif input_option == 'Enter text':
+        st.subheader("Enter text")
+        st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
+
+    elif input_option == 'YouTube Video':
+        st.subheader("YouTube Video")
+        st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
+
+
 # %%:
 def main():
     load_dotenv()
@@ -273,8 +325,8 @@ def main():
                        page_icon=":books:")
 
     # Define the state of the app
-    uploaded_files = None
-    urls_list = []
+    if "uploaded_files" not in st.session_state:
+        st.session_state.uploaded_files = None
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "my_chat_history" not in st.session_state:
@@ -310,33 +362,8 @@ def main():
         # create divider to separate the input options from the rest
         st.markdown("---")
 
-        if input_option == "Upload PDFs":
-            st.subheader("Your documents")
-            uploaded_files = st.file_uploader(
-                "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
-
-        elif input_option == "Enter URLs":
-            st.subheader("Enter URLs")
-            if st.button(label="add"):
-                st.session_state.n_urls += 1
-                st.experimental_rerun()
-
-            for i in range(st.session_state.n_urls):
-                urls_list.append(st.text_input("", placeholder=f"URL {i + 1}", label_visibility="collapsed"))
-                print(urls_list)
-
-            if st.button(label="remove"):
-                if st.session_state.n_urls > 1:
-                    st.session_state.n_urls -= 1
-                    st.experimental_rerun()
-
-        elif input_option == 'Enter text':
-            st.subheader("Enter text")
-            st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
-
-        elif input_option == 'YouTube Video':
-            st.subheader("YouTube Video")
-            st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
+        # render the input UI based on the selected input option
+        render_input_ui(input_option)
 
         # create divider to separate the input options from the rest
         st.markdown("---")
@@ -353,11 +380,11 @@ def main():
 
         if st.button("Process", use_container_width=True):
             if input_option == "Upload PDFs":
-                if uploaded_files:  # or link:
-                    save_uploaded_files(uploaded_files)
+                if st.session_state.uploaded_files:
+                    save_uploaded_files(st.session_state.uploaded_files)
                     # get pdf text
                     raw_text = []
-                    for doc in uploaded_files:
+                    for doc in st.session_state.uploaded_files:
                         if doc.type == 'application/pdf':
                             raw_text.extend(get_pdf_text([doc]))
                         elif doc.type == 'text/plain':
@@ -371,13 +398,13 @@ def main():
 
             elif input_option == "Enter URLs":
                 # check if the user entered an url
-                print(len(urls_list))
-                if len(urls_list) == 1 and urls_list[0] == "":
+                print(len(st.session_state.urls))
+                if len(st.session_state.urls) == 1 and st.session_state.urls[0] == "":
                     st.warning("Please enter at least one URL")
 
                 else:
                     # validate the urls
-                    urls_list = validate_urls(urls_list)
+                    urls_list = validate_urls(st.session_state.urls)
 
                     # get the text from the urls
                     raw_text = extract_text_from_urls(urls_list)
