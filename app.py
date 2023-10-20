@@ -318,6 +318,24 @@ def render_input_ui(input_option):
         st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
 
 
+def get_raw_text_from_youtube_video():
+    if not st.session_state.youtube_url:
+        st.warning("Please enter a YouTube video URL or ID first")
+        return
+
+    video_id = extract_video_id(st.session_state.youtube_url)
+    video_status = save_transcript_as_json(video_id)
+    log.debug(f'{video_status = }')
+
+    if video_status is False:
+        st.warning("Transcript is not available for this video or this video is not available")
+        return
+
+    show_temp_success_message(f"Fetched transcript for video: {video_id} successfully", 2)
+    JsonTextExtractor().convert_transcript_to_txt()
+    return DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load()
+
+
 # %%:
 def main():
     load_dotenv()
@@ -338,7 +356,7 @@ def main():
     if 'text_area_input' not in st.session_state:
         st.session_state.text_area_input = None
     if 'youtube_url' not in st.session_state:
-        st.session_state.youtube_url = None
+        st.session_state.youtube_url = ''
 
     st.header("Chat with your documents")
     chat_body = st.container()
@@ -422,28 +440,9 @@ def main():
                 process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
             elif input_option == 'YouTube Video':
-                # check if the user entered an url or id
-                if st.session_state.youtube_url == "":
-                    st.warning("Please enter a YouTube video URL or ID first")
-
-                # Extract the video id from the URL
-                video_id = extract_video_id(st.session_state.youtube_url)
-
-                # Save the transcript as a JSON file
-                video_status = save_transcript_as_json(video_id)
-
-                log.debug(f'{video_status = }')
-                if video_status == False:
-                    st.warning("Transcript is not available for this video or this video is not available")
-                else:
-                    show_temp_success_message(f"Fetched transcript for video: {video_id} successfully", 2)
-
-                    # Extract the text from the JSON file
-                    JsonTextExtractor().convert_transcript_to_txt()
-
-                    # Get the text from the transcript file
-                    raw_text = DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load()
-
+                # Get the transcript from the YouTube video as a string
+                raw_text = get_raw_text_from_youtube_video()
+                if raw_text:
                     process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
     # Create a form to get the user question
