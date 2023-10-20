@@ -337,6 +337,17 @@ def get_raw_text_from_youtube_video():
 
 
 # %%:
+def get_raw_text_from_urls():
+    urls = st.session_state.urls
+
+    if len(urls) == 1 and urls[0] == "":
+        st.warning("Please enter at least one URL")
+        return
+    else:
+        urls_list = validate_urls(urls)
+        return extract_text_from_urls(urls_list)
+
+
 def main():
     load_dotenv()
     st.set_page_config(page_title="",
@@ -415,18 +426,8 @@ def main():
                     st.warning("Please upload your PDFs first and click on 'Process'")
 
             elif input_option == "Enter URLs":
-                # check if the user entered an url
-                print(len(st.session_state.urls))
-                if len(st.session_state.urls) == 1 and st.session_state.urls[0] == "":
-                    st.warning("Please enter at least one URL")
-
-                else:
-                    # validate the urls
-                    urls_list = validate_urls(st.session_state.urls)
-
-                    # get the text from the urls
-                    raw_text = extract_text_from_urls(urls_list)
-
+                raw_text = get_raw_text_from_urls()
+                if raw_text:
                     process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
             elif input_option == 'Enter text':
