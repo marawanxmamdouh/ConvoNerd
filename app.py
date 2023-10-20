@@ -398,26 +398,20 @@ def get_raw_text(input_option):
     return raw_text
 
 
+# %%:
+def initialize_session_state_defaults():
+    for variable, default_value in session_state_defaults.items():
+        if variable not in st.session_state:
+            st.session_state[variable] = default_value
+
+
 def main():
     load_dotenv()
     st.set_page_config(page_title="",
                        page_icon=":books:")
 
     # Define the state of the app
-    if "uploaded_files" not in st.session_state:
-        st.session_state.uploaded_files = None
-    if "conversation" not in st.session_state:
-        st.session_state.conversation = None
-    if "my_chat_history" not in st.session_state:
-        st.session_state.my_chat_history = []
-    if 'n_urls' not in st.session_state:
-        st.session_state.n_urls = 1
-    if 'urls' not in st.session_state:
-        st.session_state.urls = []
-    if 'text_area_input' not in st.session_state:
-        st.session_state.text_area_input = ''
-    if 'youtube_url' not in st.session_state:
-        st.session_state.youtube_url = ''
+    initialize_session_state_defaults()
 
     st.header("Chat with your documents")
     chat_body = st.container()
