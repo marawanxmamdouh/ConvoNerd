@@ -42,7 +42,7 @@ class JsonTextExtractor:
 
     def __init__(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.directory_path = os.path.join(script_dir, './uploaded_files/json')
+        self.directory_path = os.path.join(script_dir, '../uploaded_files/json')
         self.merged_text = []
 
     def extract_text_recursive(self, data):

@@ -19,10 +19,10 @@ from langchain.memory import ConversationBufferWindowMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from loguru import logger as log
 from transformers import AutoTokenizer, TextStreamer, pipeline
+from youtube_transcript_api import TranscriptsDisabled
 
-from Json_text_extractor import JsonTextExtractor
 from deal_with_urls import extract_text_from_urls
-from youtube_transcript import extract_video_id, save_transcript_as_json
+from text_extraction.youtube_extractor import YouTubeTextExtractor
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
@@ -339,17 +339,11 @@ def get_raw_text_from_youtube_video():
         st.warning("Please enter a YouTube video URL or ID first")
         return
 
-    video_id = extract_video_id(st.session_state.youtube_url)
-    video_status = save_transcript_as_json(video_id)
-    log.debug(f'{video_status = }')
-
-    if video_status is False:
-        st.warning("Transcript is not available for this video or this video is not available")
-        return
-
-    show_temp_success_message(f"Fetched transcript for video: {video_id} successfully", 2)
-    JsonTextExtractor().convert_transcript_to_txt()
-    return DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load()
+    youtube_extractor = YouTubeTextExtractor()
+    try:
+        return youtube_extractor.extract_text(st.session_state.youtube_url)
+    except TranscriptsDisabled as e:
+        st.warning(f"Transcript is not available for this video or this video is not available.")
 
 
 def get_raw_text_from_urls():
