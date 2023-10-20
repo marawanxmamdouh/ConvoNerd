@@ -354,7 +354,7 @@ def main():
     if 'urls' not in st.session_state:
         st.session_state.urls = []
     if 'text_area_input' not in st.session_state:
-        st.session_state.text_area_input = None
+        st.session_state.text_area_input = ''
     if 'youtube_url' not in st.session_state:
         st.session_state.youtube_url = ''
 
@@ -431,13 +431,11 @@ def main():
 
             elif input_option == 'Enter text':
                 # check if the user entered a text
-                print(f'the length of the text in the text area is: {len(st.session_state.text_area_input)}',
-                      file=sys.stderr)
-                if st.session_state.text_area_input == "":
+                if not st.session_state.text_area_input:
                     st.warning("Please enter some text first")
-                raw_text = st.session_state.text_area_input
-
-                process_text(text=raw_text, model_options_spinner=model_options_spinner)
+                else:
+                    raw_text = st.session_state.text_area_input
+                    process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
             elif input_option == 'YouTube Video':
                 # Get the transcript from the YouTube video as a string
