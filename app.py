@@ -366,6 +366,23 @@ def get_raw_text_from_pdfs():
         return
 
 
+def get_raw_text(input_option):
+    raw_text = None
+
+    if input_option == "Upload PDFs":
+        raw_text = get_raw_text_from_pdfs()
+    elif input_option == "Enter URLs":
+        raw_text = get_raw_text_from_urls()
+    elif input_option == 'Enter text':
+        raw_text = st.session_state.text_area_input
+        if not raw_text:
+            st.warning("Please enter some text first")
+    elif input_option == 'YouTube Video':
+        raw_text = get_raw_text_from_youtube_video()
+
+    return raw_text
+
+
 def main():
     load_dotenv()
     st.set_page_config(page_title="",
@@ -426,29 +443,9 @@ def main():
         st.markdown("---")
 
         if st.button("Process", use_container_width=True):
-            if input_option == "Upload PDFs":
-                raw_text = get_raw_text_from_pdfs()
-                if raw_text:
-                    process_text(text=raw_text, model_options_spinner=model_options_spinner)
-
-            elif input_option == "Enter URLs":
-                raw_text = get_raw_text_from_urls()
-                if raw_text:
-                    process_text(text=raw_text, model_options_spinner=model_options_spinner)
-
-            elif input_option == 'Enter text':
-                # check if the user entered a text
-                if not st.session_state.text_area_input:
-                    st.warning("Please enter some text first")
-                else:
-                    raw_text = st.session_state.text_area_input
-                    process_text(text=raw_text, model_options_spinner=model_options_spinner)
-
-            elif input_option == 'YouTube Video':
-                # Get the transcript from the YouTube video as a string
-                raw_text = get_raw_text_from_youtube_video()
-                if raw_text:
-                    process_text(text=raw_text, model_options_spinner=model_options_spinner)
+            raw_text = get_raw_text(input_option=input_option)
+            if raw_text:
+                process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
     # Create a form to get the user question
     with st.form(key='my_form', clear_on_submit=True):
