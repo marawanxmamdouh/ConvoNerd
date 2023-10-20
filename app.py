@@ -348,6 +348,24 @@ def get_raw_text_from_urls():
         return extract_text_from_urls(urls_list)
 
 
+def get_raw_text_from_pdfs():
+    uploaded_files = st.session_state.uploaded_files
+
+    if uploaded_files:
+        save_uploaded_files(uploaded_files)
+        raw_text = []
+        for doc in uploaded_files:
+            if doc.type == 'application/pdf':
+                raw_text.extend(get_pdf_text([doc]))
+            elif doc.type == 'text/plain':
+                raw_text.extend(
+                    DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load())
+        return raw_text
+    else:
+        st.warning("Please upload your PDFs first and click on 'Process'")
+        return
+
+
 def main():
     load_dotenv()
     st.set_page_config(page_title="",
@@ -409,21 +427,9 @@ def main():
 
         if st.button("Process", use_container_width=True):
             if input_option == "Upload PDFs":
-                if st.session_state.uploaded_files:
-                    save_uploaded_files(st.session_state.uploaded_files)
-                    # get pdf text
-                    raw_text = []
-                    for doc in st.session_state.uploaded_files:
-                        if doc.type == 'application/pdf':
-                            raw_text.extend(get_pdf_text([doc]))
-                        elif doc.type == 'text/plain':
-                            raw_text.extend(
-                                DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load())
-
+                raw_text = get_raw_text_from_pdfs()
+                if raw_text:
                     process_text(text=raw_text, model_options_spinner=model_options_spinner)
-
-                else:
-                    st.warning("Please upload your PDFs first and click on 'Process'")
 
             elif input_option == "Enter URLs":
                 raw_text = get_raw_text_from_urls()
