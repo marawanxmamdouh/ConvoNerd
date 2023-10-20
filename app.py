@@ -27,14 +27,29 @@ from youtube_transcript import extract_video_id, save_transcript_as_json
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
 
-# %%:
-config = {
+# %%: Configuration for the app
+model_config = {
     'max_new_tokens': 4096, 'temperature': 0.1, 'top_p': 0.95,
     'repetition_penalty': 1.15, 'context_length': 4096
 }
 
+session_state_defaults = {
+    "uploaded_files": None,
+    "conversation": None,
+    "my_chat_history": [],
+    "n_urls": 1,
+    "urls": [],
+    "text_area_input": "",
+    "youtube_url": ""
+}
 
-# %%:
+input_options_rg = ["Upload PDFs", "Enter URLs", "Enter text", "YouTube Video"]
+
+model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)',
+                 'Llama-2-13B-chat-GGML (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
+
+
+# %%: Abstract class for language models
 class LanguageModel(ABC):
     @abstractmethod
     def get_llm(self):
@@ -43,24 +58,24 @@ class LanguageModel(ABC):
 
 class HuggingFaceModel(LanguageModel):
     def get_llm(self):
-        return HuggingFaceHub(repo_id="google/flan-t5-xxl", config=config)
+        return HuggingFaceHub(repo_id="google/flan-t5-xxl", config=model_config)
 
 
 class OpenAIModel(LanguageModel):
     def get_llm(self):
-        return ChatOpenAI(config=config)
+        return ChatOpenAI(config=model_config)
 
 
 class MistralModel(LanguageModel):
     def get_llm(self):
         model_path = 'models/mistral-7b-instruct-v0.1.Q4_K_M.gguf'
-        return CTransformers(model=model_path, model_type='mistral', device=DEVICE, do_sample=True, config=config)
+        return CTransformers(model=model_path, model_type='mistral', device=DEVICE, do_sample=True, config=model_config)
 
 
 class GgmlModel(LanguageModel):
     def get_llm(self):
         model_path = 'models/llama-2-13b-chat.Q4_K_M.gguf'
-        return CTransformers(model=model_path, model_type='llama', device=DEVICE, do_sample=True, config=config)
+        return CTransformers(model=model_path, model_type='llama', device=DEVICE, do_sample=True, config=model_config)
 
 
 class GptqModel(LanguageModel):
@@ -318,6 +333,7 @@ def render_input_ui(input_option):
         st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
 
 
+# %%: Functions to get raw text from different sources
 def get_raw_text_from_youtube_video():
     if not st.session_state.youtube_url:
         st.warning("Please enter a YouTube video URL or ID first")
@@ -336,7 +352,6 @@ def get_raw_text_from_youtube_video():
     return DirectoryLoader('uploaded_files/txt', glob='**/*.txt', show_progress=True).load()
 
 
-# %%:
 def get_raw_text_from_urls():
     urls = st.session_state.urls
 
@@ -420,7 +435,6 @@ def main():
     with st.sidebar:
         # create a radio group for the different input options
         st.subheader("Input options")
-        input_options_rg = ["Upload PDFs", "Enter URLs", "Enter text", "YouTube Video"]
         input_option = st.radio("", input_options_rg, on_change=clear_cache)
 
         # create divider to separate the input options from the rest
@@ -434,9 +448,6 @@ def main():
 
         # Create a radio group for the different models
         st.subheader("Select a Model")
-        model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)',
-                         'Llama-2-13B-chat-GGML (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
-
         model_options_spinner = st.selectbox("", model_options)
 
         # create divider to separate the input options from the rest
