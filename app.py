@@ -1,5 +1,3 @@
-import os
-import shutil
 import time
 from http.client import InvalidURL
 
@@ -17,7 +15,7 @@ from text_extraction.pdf_extractor import PDFTextExtractor
 from text_extraction.text_file_extractor import TextFileExtractor
 from text_extraction.url_extractor import URLTextExtractor
 from text_extraction.youtube_extractor import YouTubeTextExtractor
-from utils.helpers import has_internet_connection
+from utils.helpers import has_internet_connection, save_uploaded_files
 
 # %%: Set the device to GPU if available
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -58,31 +56,7 @@ def show_temp_success_message(message: str, delay: int):
     container.empty()
 
 
-# %%
-def save_uploaded_files(uploaded_files):
-    # Delete the uploaded_files folder if it exists
-    shutil.rmtree('uploaded_files') if os.path.isdir('uploaded_files') else None
-
-    # Create the uploaded_files folder and the subfolders for the different file types
-    for uploaded_file in uploaded_files:
-        file_extension = os.path.splitext(uploaded_file.name)[1]
-        target_folder = os.path.join('uploaded_files', file_extension.replace('.', ''))
-
-        if not os.path.isdir('uploaded_files'):
-            os.mkdir('uploaded_files')
-        if not os.path.isdir(target_folder):
-            os.mkdir(target_folder)
-
-        target_file_path = os.path.join(target_folder, uploaded_file.name)
-
-        # Save the uploaded file to the target folder
-        with open(target_file_path, 'wb') as f:
-            f.write(uploaded_file.getvalue())
-
-        # show a success message for 2 seconds and then hide it.
-        show_temp_success_message(f"File uploaded successfully: {uploaded_file.name}", 2)
-
-
+# %%:
 def handle_userinput(user_question, container):
     # Send the user question to the conversation chain and get the response
     response = st.session_state.conversation({'question': user_question})
