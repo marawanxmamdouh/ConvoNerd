@@ -6,7 +6,7 @@ authors = ["Marawan Mamdouh <marawanxmamdouh@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.11 <3.13"
 torch = "^2.1.0"
 langchain = "^0.0.314"
 youtube-transcript-api = "^0.6.1"
@@ -24,6 +24,7 @@ unstructured = "^0.10.22"
 python-magic-bin = "^0.4.14"
 python-magic = "^0.4.27"
 libmagic = "^1.0"
+pillow = "^10.1.0"
 
 
 [build-system]
