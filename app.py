@@ -1,17 +1,15 @@
 import os
 import shutil
-import sys
 import time
 from http.client import InvalidURL
 
 import streamlit as st
 import torch
 from dotenv import load_dotenv
-from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferWindowMemory
 from loguru import logger as log
 from youtube_transcript_api import TranscriptsDisabled
 
+from conversation_chain import create_conversation_chain
 from embedding.text_processing import get_text_chunks
 from embedding.vector_store import get_vectorstore
 from language_models import get_language_model
@@ -40,22 +38,6 @@ input_options_rg = ["Upload PDFs", "Enter URLs", "Enter text", "YouTube Video"]
 
 model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)',
                  'Llama-2-13B-chat-GGML (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
-
-
-# %%:
-class ConversationChainFactory:
-    @staticmethod
-    def get_conversation_chain(vectorstore, language_model):
-        llm = language_model
-        memory = ConversationBufferWindowMemory(k=1, memory_key='chat_history', return_messages=True)
-        conversation_chain = ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 2}),
-            memory=memory,
-            chain_type="stuff",
-            verbose=True,
-        )
-        return conversation_chain
 
 
 # %%
@@ -126,11 +108,6 @@ def handle_userinput(user_question, container):
         container.chat_message(sender).write(message)
 
 
-def create_conversation_chain(vectorstore, language_model):
-    if language_model:
-        st.session_state.conversation = ConversationChainFactory.get_conversation_chain(vectorstore, language_model)
-
-
 def clear_cache():
     keys = list(st.session_state.keys())
     for key in keys:
@@ -143,7 +120,8 @@ def process_text(text, model_options_spinner):
         text_chunks = get_text_chunks(text)
         vectorstore = get_vectorstore(text_chunks)
         language_model = get_language_model(model_options_spinner)
-        create_conversation_chain(vectorstore=vectorstore, language_model=language_model)
+        st.session_state.conversation = create_conversation_chain(vectorstore=vectorstore,
+                                                                  language_model=language_model)
         show_temp_success_message(f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
 
 
