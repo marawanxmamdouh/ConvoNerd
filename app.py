@@ -3,6 +3,7 @@ import shutil
 import sys
 import time
 from abc import ABC, abstractmethod
+from http.client import InvalidURL
 
 import streamlit as st
 import torch
@@ -20,9 +21,9 @@ from loguru import logger as log
 from transformers import AutoTokenizer, TextStreamer, pipeline
 from youtube_transcript_api import TranscriptsDisabled
 
-from deal_with_urls import extract_text_from_urls
 from text_extraction.pdf_extractor import PDFTextExtractor
 from text_extraction.text_file_extractor import TextFileExtractor
+from text_extraction.url_extractor import URLTextExtractor
 from text_extraction.youtube_extractor import YouTubeTextExtractor
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -224,19 +225,6 @@ def handle_userinput(user_question, container):
         container.chat_message(sender).write(message)
 
 
-def validate_urls(urls):
-    """Validate URLs and return a list of valid URLs."""
-    valid_urls = []
-    for url in urls:
-        # Check if the URL is valid
-        if validators.url(url):
-            valid_urls.append(url)
-        else:
-            st.warning(f"Invalid URL: {url}")
-
-    return valid_urls
-
-
 def select_language_model(model_options_spinner):
     if model_options_spinner == 'Llama-2-13B-chat-GPTQ (GPU required)':
         return GptqModel()
@@ -341,12 +329,19 @@ def get_raw_text_from_youtube_video():
 def get_raw_text_from_urls():
     urls = st.session_state.urls
 
-    if len(urls) == 1 and urls[0] == "":
+    if not urls or all(url == "" for url in urls):
         st.warning("Please enter at least one URL")
         return
+
+    try:
+        extractor = URLTextExtractor(urls)
+        extracted_text = extractor.extract_text_from_urls()
+    except InvalidURL:
+        st.warning("Please enter a valid URL.")
+    except Exception as e:
+        st.warning(f"Something went wrong. Please try again later.\nError: {e}")
     else:
-        urls_list = validate_urls(urls)
-        return extract_text_from_urls(urls_list)
+        return extracted_text
 
 
 def get_raw_text_from_pdfs():
