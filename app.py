@@ -10,13 +10,14 @@ import torch
 import validators
 from auto_gptq import AutoGPTQForCausalLM
 from dotenv import load_dotenv
-from langchain import FAISS, HuggingFacePipeline, HuggingFaceHub
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.llms import CTransformers
+from langchain.llms import HuggingFacePipeline, HuggingFaceHub
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores.faiss import FAISS
 from loguru import logger as log
 from transformers import AutoTokenizer, TextStreamer, pipeline
 from youtube_transcript_api import TranscriptsDisabled
