@@ -25,6 +25,7 @@ from text_extraction.pdf_extractor import PDFTextExtractor
 from text_extraction.text_file_extractor import TextFileExtractor
 from text_extraction.url_extractor import URLTextExtractor
 from text_extraction.youtube_extractor import YouTubeTextExtractor
+from utils.helpers import has_internet_connection
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
@@ -315,6 +316,10 @@ def render_input_ui(input_option):
 
 # %%: Functions to get raw text from different sources
 def get_raw_text_from_youtube_video():
+    if not has_internet_connection():
+        st.warning("Please check your internet connection and try again.")
+        return
+
     if not st.session_state.youtube_url:
         st.warning("Please enter a YouTube video URL or ID first")
         return
@@ -328,6 +333,10 @@ def get_raw_text_from_youtube_video():
 
 def get_raw_text_from_urls():
     urls = st.session_state.urls
+
+    if not has_internet_connection():
+        st.warning("Please check your internet connection and try again.")
+        return
 
     if not urls or all(url == "" for url in urls):
         st.warning("Please enter at least one URL")
