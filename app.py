@@ -7,7 +7,6 @@ from http.client import InvalidURL
 
 import streamlit as st
 import torch
-import validators
 from auto_gptq import AutoGPTQForCausalLM
 from dotenv import load_dotenv
 from langchain.chains import ConversationalRetrievalChain
@@ -328,8 +327,12 @@ def get_raw_text_from_youtube_video():
     youtube_extractor = YouTubeTextExtractor()
     try:
         return youtube_extractor.extract_text(st.session_state.youtube_url)
-    except TranscriptsDisabled as e:
+    except TranscriptsDisabled:
+        log.warning("Transcript is not available for this video or this video is not available.")
         st.warning(f"Transcript is not available for this video or this video is not available.")
+    except Exception as e:
+        log.error(f"Something went wrong.\nError: {e}")
+        st.warning(f"Something went wrong. Please try again later.\nError: {e}")
 
 
 def get_raw_text_from_urls():
@@ -347,8 +350,10 @@ def get_raw_text_from_urls():
         extractor = URLTextExtractor(urls)
         extracted_text = extractor.extract_text_from_urls()
     except InvalidURL:
-        st.warning("Please enter a valid URL.")
+        log.warning("URLs are invalid, please check your input and try again.")
+        st.warning("URLs are invalid, please check your input and try again.")
     except Exception as e:
+        log.error(f"Something went wrong.\nError: {e}")
         st.warning(f"Something went wrong. Please try again later.\nError: {e}")
     else:
         return extracted_text
