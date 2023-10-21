@@ -27,8 +27,9 @@ from text_extraction.url_extractor import URLTextExtractor
 from text_extraction.youtube_extractor import YouTubeTextExtractor
 from utils.helpers import has_internet_connection
 
+# %%: Set the device to GPU if available
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
-print(DEVICE)
+log.info(f"Using device: {DEVICE}")
 
 # %%: Configuration for the app
 model_config = {
