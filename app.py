@@ -8,13 +8,12 @@ import streamlit as st
 import torch
 from dotenv import load_dotenv
 from langchain.chains import ConversationalRetrievalChain
-from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.memory import ConversationBufferWindowMemory
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores.faiss import FAISS
 from loguru import logger as log
 from youtube_transcript_api import TranscriptsDisabled
 
+from embedding.text_processing import get_text_chunks
+from embedding.vector_store import get_vectorstore
 from language_models import get_language_model
 from text_extraction.pdf_extractor import PDFTextExtractor
 from text_extraction.text_file_extractor import TextFileExtractor
@@ -100,46 +99,6 @@ def save_uploaded_files(uploaded_files):
 
         # show a success message for 2 seconds and then hide it.
         show_temp_success_message(f"File uploaded successfully: {uploaded_file.name}", 2)
-
-
-def get_text_chunks(text):
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        length_function=len
-    )
-
-    # check if the text is a string
-    if isinstance(text, str):
-        chunks = text_splitter.split_text(text)
-    else:
-        chunks = text_splitter.split_documents(text)
-
-    return chunks
-
-
-def get_vectorstore(text_chunks):
-    vectorstore = None
-    model_name = "BAAI/bge-small-en"
-    model_kwargs = {'device': DEVICE}
-    encode_kwargs = {'normalize_embeddings': True}  # set True to compute cosine similarity
-    embeddings = HuggingFaceBgeEmbeddings(
-        model_name=model_name,
-        model_kwargs=model_kwargs,
-        encode_kwargs=encode_kwargs
-    )
-    st.write(f"Loaded embeddings model: {text_chunks}")
-
-    if text_chunks:
-        # check if the text is a list of strings or a list of lists of strings
-        if isinstance(text_chunks, list) and isinstance(text_chunks[0], str):
-            vectorstore = FAISS.from_texts(text_chunks, embeddings)
-        else:
-            vectorstore = FAISS.from_documents(text_chunks, embeddings)
-    else:
-        st.error(f'Your input is empty: {len(text_chunks)}. Please use a different input and try again.')
-
-    return vectorstore
 
 
 def handle_userinput(user_question, container):
@@ -320,6 +279,9 @@ def get_raw_text(input_option):
             st.warning("Please enter some text first")
     elif input_option == 'YouTube Video':
         raw_text = get_raw_text_from_youtube_video()
+
+    if not raw_text:
+        log.warning("No text found in the input to process.")
 
     return raw_text
 
