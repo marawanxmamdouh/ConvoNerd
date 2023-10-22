@@ -220,6 +220,28 @@ def render_input_ui(input_option):
 
 # %%: Functions to get raw text from different sources
 def get_raw_text_from_youtube_video():
+    """
+    Retrieves the raw text from a YouTube video.
+
+    Returns
+    -------
+    raw_text: str
+        The extracted text from the given YouTube video.
+
+    Raises
+    ------
+    TranscriptsDisabled
+        If the transcript is not available for the given video.
+    Exception
+        If an unexpected error occurs during the extraction process.
+
+    Warnings
+    --------
+    - If there is no internet connection.
+    - If the given YouTube video URL or ID is invalid.
+    - If the transcript is not available for the given video.
+    - If an unexpected error occurs during the extraction process.
+    """
     if not has_internet_connection():
         st.warning("Please check your internet connection and try again.")
         return
@@ -240,6 +262,28 @@ def get_raw_text_from_youtube_video():
 
 
 def get_raw_text_from_urls():
+    """
+    Retrieve raw text from a list of URLs.
+
+    Returns
+    -------
+    extracted_text: str
+        The extracted text from the given URLs.
+
+    Raises
+    ------
+    InvalidURL
+        If the given URLs are invalid.
+    Exception
+        If an unexpected error occurs during the extraction process.
+
+    Warnings
+    --------
+    - If there is no internet connection.
+    - If the given URLs are empty.
+    - If the given URLs are invalid.
+    - If an unexpected error occurs during the extraction process.
+    """
     urls = st.session_state.urls
 
     if not has_internet_connection():
@@ -264,6 +308,24 @@ def get_raw_text_from_urls():
 
 
 def get_raw_text_from_pdfs():
+    """
+    Retrieve raw text from a list of PDFs.
+
+    Returns
+    -------
+    raw_text: str
+        The extracted text from the given PDFs.
+
+    Raises
+    ------
+    Exception
+        If an unexpected error occurs during the extraction process.
+
+    Warnings
+    --------
+    - If no files are uploaded.
+    - If the file type is not supported.
+    """
     uploaded_files = st.session_state.uploaded_files
 
     if not uploaded_files:
@@ -285,19 +347,51 @@ def get_raw_text_from_pdfs():
     return raw_text
 
 
-def get_raw_text(input_option):
-    raw_text = None
+def get_raw_text_from_text_area():
+    """
+    Retrieve raw text from the text area.
 
-    if input_option == "Upload PDFs":
-        raw_text = get_raw_text_from_pdfs()
-    elif input_option == "Enter URLs":
-        raw_text = get_raw_text_from_urls()
-    elif input_option == 'Enter text':
-        raw_text = st.session_state.text_area_input
-        if not raw_text:
-            st.warning("Please enter some text first")
-    elif input_option == 'YouTube Video':
-        raw_text = get_raw_text_from_youtube_video()
+    Returns
+    -------
+    raw_text: str
+        The text from the text area.
+
+    Warnings
+    --------
+    - If the text area is empty.
+    """
+    raw_text = st.session_state.text_area_input
+    if not raw_text:
+        st.warning("Please enter some text first")
+
+    return raw_text
+
+
+def get_raw_text(input_option):
+    """
+    Retrieve raw text from different sources based on the selected input option.
+
+    Parameters
+    ----------
+    input_option: str
+        The selected input option from the radio group in the sidebar.
+
+    Returns
+    -------
+    raw_text: str
+        The extracted text from the given input.
+
+    Warnings
+    --------
+    - If no text found in the input.
+    """
+    input_mapper = {
+        "Upload PDFs": get_raw_text_from_pdfs,
+        "Enter URLs": get_raw_text_from_urls,
+        "Enter text": get_raw_text_from_text_area,
+        "YouTube Video": get_raw_text_from_youtube_video
+    }
+    raw_text = input_mapper[input_option]()
 
     if not raw_text:
         log.warning("No text found in the input to process.")
