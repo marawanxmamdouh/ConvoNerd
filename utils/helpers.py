@@ -4,6 +4,7 @@ import shutil
 import requests
 from loguru import logger as log
 
+
 def has_internet_connection():
     try:
         response = requests.get("https://www.google.com", timeout=5)
