@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 from loguru import logger as log
 from youtube_transcript_api import TranscriptsDisabled
 
-from conversation_chain import create_conversation_chain
+from conversation.conversation_chain import create_conversation_chain
 from embedding.text_processing import get_text_chunks
 from embedding.vector_store import get_vectorstore
-from language_models import get_language_model
+from language_models.language_models import get_language_model
 from text_extraction.pdf_extractor import PDFTextExtractor
 from text_extraction.text_file_extractor import TextFileExtractor
 from text_extraction.url_extractor import URLTextExtractor
