@@ -106,15 +106,47 @@ def clear_cache():
         st.session_state.pop(key)
 
 
-def process_text(text, model_options_spinner):
+def process_text(text, model_options_spinner) -> None:
+    """
+    Process the input text and create a conversation chain.
+    Also, save the conversation chain in the session state,
+    and display a success message with the processing time.
+
+    Parameters
+    ----------
+    text: str | list of documents
+        The input text to be processed.
+    model_options_spinner: str
+        The selected model option for language models.
+
+    Returns
+    -------
+    None (Updates the conversation chain in the session state, displays a success message)
+    """
+    # Starting spinner widget to show the processing status
     with st.spinner("Processing"):
+
+        # Marking the start time
         start_time = time.time()
+
+        # Splitting text into chunks
         text_chunks = get_text_chunks(text)
+
+        # Creating a vectorstore from text chunks
         vectorstore = get_vectorstore(text_chunks)
+
+        # Getting the language model
         language_model = get_language_model(model_options_spinner)
-        st.session_state.conversation = create_conversation_chain(vectorstore=vectorstore,
-                                                                  language_model=language_model)
-        show_temp_success_message(f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds", 5)
+
+        # Creating a conversation chain and saving it in the session state
+        st.session_state.conversation = create_conversation_chain(
+            vectorstore=vectorstore,
+            language_model=language_model
+        )
+
+        # Displaying a temporary success message with processing time, disappears after 5 seconds
+        message = f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds"
+        show_temp_success_message(message, 5)
 
 
 def render_input_ui(input_option):
