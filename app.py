@@ -1,3 +1,4 @@
+# Importing the necessary libraries
 import time
 from http.client import InvalidURL
 
@@ -264,6 +265,16 @@ def process_text(text, model_options_spinner) -> None:
 
 # %%: Functions to handle the user input (questions)
 def handle_userinput(user_question, container):
+    """
+    Handles the user's input question and updates relevant components accordingly.
+
+    Parameters
+    ----------
+    user_question : str
+        User's input question to be processed.
+    container : UI_Container
+        User interface container that will display the response.
+    """
     response = get_response(user_question)
     log.debug(f'Response: {response}')
     log.debug(f'{response["question"] = }')
@@ -344,17 +355,23 @@ def show_temp_success_message(message: str, delay: int):
 
 
 def render_upload_input():
+    """Renders a file uploader widget allowing the user to upload multiple files."""
     st.subheader("Your documents")
     uploaded_files = st.file_uploader(
         "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+
+    # Store uploaded files in Streamlit session state.
     st.session_state.uploaded_files = uploaded_files
 
 
 def manage_url_count():
+    """Manages the count of URL input fields based on the user's interactions with 'add' and 'remove' buttons."""
+    # Increase the count of URL fields by one when 'add' button is clicked.
     if st.button(label="add"):
         st.session_state.n_urls += 1
         st.experimental_rerun()
 
+    # Decrease the count of URL fields by one when the 'remove' button is clicked.
     if st.button(label="remove"):
         if st.session_state.n_urls > 1:
             st.session_state.n_urls -= 1
@@ -362,6 +379,7 @@ def manage_url_count():
 
 
 def render_urls_input():
+    """Renders URL input fields according to the URL count managed by `manage_url_count` function."""
     st.subheader("Enter URLs")
 
     # Generate a list of URLs
@@ -370,16 +388,24 @@ def render_urls_input():
     log.debug(f"{urls_list = }")
 
     manage_url_count()
+
+    # Store URL list in Streamlit session state.
     st.session_state.urls = urls_list
 
 
 def render_text_input():
+    """Renders a text area input field where the user can enter text."""
     st.subheader("Enter text")
+
+    # Store text area input in Streamlit session state.
     st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
 
 
 def render_youtube_input():
+    """Renders a text input field where the user can enter a YouTube video URL."""
     st.subheader("YouTube Video")
+
+    # Store YouTube URL in Streamlit session state.
     st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
 
 
