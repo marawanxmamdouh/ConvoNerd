@@ -38,186 +38,6 @@ model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)'
                  'Llama-2-13B-chat-GGML (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
 
 
-# %%
-def show_temp_success_message(message: str, delay: int):
-    """
-    Create an empty container with a success message and empty it after a delay.
-
-    Parameters:
-    message (str): The success message to display in the container.
-    Delay (int): The time in seconds to wait before clearing the container.
-
-    Returns:
-    None
-    """
-    container = st.empty()
-    container.success(message)
-    time.sleep(delay)
-    container.empty()
-
-
-# %%:
-def handle_userinput(user_question, container):
-    response = get_response(user_question)
-    log.debug(f'Response: {response}')
-    log.debug(f'{response["question"] = }')
-
-    helpful_answer = get_helpful_answer(response)
-    update_chat_history(question=user_question, helpful_answer=helpful_answer)
-
-    update_memory(helpful_answer)
-    render_response_to_ui(container)
-
-
-def get_response(user_question):
-    """Send the user question to the conversation chain and get the response."""
-    return st.session_state.conversation({'question': user_question})
-
-
-def update_chat_history(question, helpful_answer):
-    """Update the chat history."""
-    st.session_state.my_chat_history.append(question)
-    st.session_state.my_chat_history.append(helpful_answer)
-
-
-def get_helpful_answer(response):
-    """Extract the helpful answer from the response."""
-    helpful_answer = response['answer'].split('Helpful Answer:')[-1]
-    log.success(f'{helpful_answer = }')
-    return helpful_answer
-
-
-def update_memory(helpful_answer):
-    """Update the chat_history in the memory with the new helpful answer."""
-    st.session_state.conversation.memory.chat_memory.messages[-1].content = helpful_answer
-    log.debug(f"After: {st.session_state.conversation.memory.chat_memory.messages[-1].content = }")
-
-
-def render_response_to_ui(container):
-    """Display the response in the chat."""
-    for i, message in enumerate(st.session_state.my_chat_history):
-        sender = "human" if i % 2 == 0 else "assistant"
-        container.chat_message(sender).write(message)
-
-
-def clear_cache():
-    keys = list(st.session_state.keys())
-    for key in keys:
-        st.session_state.pop(key)
-
-
-def process_text(text, model_options_spinner) -> None:
-    """
-    Process the input text and create a conversation chain.
-    Also, save the conversation chain in the session state,
-    and display a success message with the processing time.
-
-    Parameters
-    ----------
-    text: str | list of documents
-        The input text to be processed.
-    model_options_spinner: str
-        The selected model option for language models.
-
-    Returns
-    -------
-    None (Updates the conversation chain in the session state, displays a success message)
-    """
-    # Starting spinner widget to show the processing status
-    with st.spinner("Processing"):
-        # Marking the start time
-        start_time = time.time()
-
-        # Splitting text into chunks
-        text_chunks = get_text_chunks(text)
-
-        # Creating a vectorstore from text chunks
-        vectorstore = get_vectorstore(text_chunks)
-
-        # Getting the language model
-        language_model = get_language_model(model_options_spinner)
-
-        # Creating a conversation chain and saving it in the session state
-        st.session_state.conversation = create_conversation_chain(
-            vectorstore=vectorstore,
-            language_model=language_model
-        )
-
-        # Displaying a temporary success message with processing time, disappears after 5 seconds
-        message = f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds"
-        show_temp_success_message(message, 5)
-
-
-# %%: Functions to render the input UI
-def render_upload_input():
-    st.subheader("Your documents")
-    uploaded_files = st.file_uploader(
-        "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
-    st.session_state.uploaded_files = uploaded_files
-
-
-def manage_url_count():
-    if st.button(label="add"):
-        st.session_state.n_urls += 1
-        st.experimental_rerun()
-
-    if st.button(label="remove"):
-        if st.session_state.n_urls > 1:
-            st.session_state.n_urls -= 1
-            st.experimental_rerun()
-
-
-def render_urls_input():
-    st.subheader("Enter URLs")
-
-    # Generate a list of URLs
-    urls_list = [st.text_input("", placeholder=f"URL {i + 1}", label_visibility="collapsed")
-                 for i in range(st.session_state.n_urls)]
-    log.debug(f"{urls_list = }")
-
-    manage_url_count()
-    st.session_state.urls = urls_list
-
-
-def render_text_input():
-    st.subheader("Enter text")
-    st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
-
-
-def render_youtube_input():
-    st.subheader("YouTube Video")
-    st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
-
-
-def render_input_ui(input_option):
-    """
-    Render the input UI based on the selected input option.
-    The input options are:
-        1. Upload PDFs
-        2. Enter URLs
-        3. Enter text
-        4. YouTube Video
-
-    Parameters
-    ----------
-    input_option : str
-        The selected input option from the radio group in the sidebar.
-
-    Returns
-    -------
-    None (Updates the session state variables)
-    """
-
-    option_mapper = {
-        "Upload PDFs": render_upload_input,
-        "Enter URLs": render_urls_input,
-        "Enter text": render_text_input,
-        "YouTube Video": render_youtube_input
-    }
-
-    option_mapper[input_option]()
-
-
 # %%: Functions to get raw text from different sources
 def get_raw_text_from_youtube_video():
     """
@@ -399,13 +219,200 @@ def get_raw_text(input_option):
     return raw_text
 
 
-# %%:
+# %%: Process the input text and create a conversation chain
+def process_text(text, model_options_spinner) -> None:
+    """
+    Process the input text and create a conversation chain.
+    Also, save the conversation chain in the session state,
+    and display a success message with the processing time.
+
+    Parameters
+    ----------
+    text: str | list of documents
+        The input text to be processed.
+    model_options_spinner: str
+        The selected model option for language models.
+
+    Returns
+    -------
+    None (Updates the conversation chain in the session state, displays a success message)
+    """
+    # Starting spinner widget to show the processing status
+    with st.spinner("Processing"):
+        # Marking the start time
+        start_time = time.time()
+
+        # Splitting text into chunks
+        text_chunks = get_text_chunks(text)
+
+        # Creating a vectorstore from text chunks
+        vectorstore = get_vectorstore(text_chunks)
+
+        # Getting the language model
+        language_model = get_language_model(model_options_spinner)
+
+        # Creating a conversation chain and saving it in the session state
+        st.session_state.conversation = create_conversation_chain(
+            vectorstore=vectorstore,
+            language_model=language_model
+        )
+
+        # Displaying a temporary success message with processing time, disappears after 5 seconds
+        message = f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds"
+        show_temp_success_message(message, 5)
+
+
+# %%: Functions to handle the user input (questions)
+def handle_userinput(user_question, container):
+    response = get_response(user_question)
+    log.debug(f'Response: {response}')
+    log.debug(f'{response["question"] = }')
+
+    helpful_answer = get_helpful_answer(response)
+    update_chat_history(question=user_question, helpful_answer=helpful_answer)
+
+    update_memory(helpful_answer)
+    render_response_to_ui(container)
+
+
+def get_response(user_question):
+    """Send the user question to the conversation chain and get the response."""
+    return st.session_state.conversation({'question': user_question})
+
+
+def update_chat_history(question, helpful_answer):
+    """Update the chat history."""
+    st.session_state.my_chat_history.append(question)
+    st.session_state.my_chat_history.append(helpful_answer)
+
+
+def get_helpful_answer(response):
+    """Extract the helpful answer from the response."""
+    helpful_answer = response['answer'].split('Helpful Answer:')[-1]
+    log.success(f'{helpful_answer = }')
+    return helpful_answer
+
+
+def update_memory(helpful_answer):
+    """Update the chat_history in the memory with the new helpful answer."""
+    st.session_state.conversation.memory.chat_memory.messages[-1].content = helpful_answer
+    log.debug(f"After: {st.session_state.conversation.memory.chat_memory.messages[-1].content = }")
+
+
+def render_response_to_ui(container):
+    """Display the response in the chat."""
+    for i, message in enumerate(st.session_state.my_chat_history):
+        sender = "human" if i % 2 == 0 else "assistant"
+        container.chat_message(sender).write(message)
+
+
+# %%: Handle the session state variables
 def initialize_session_state_defaults():
+    """Initializes the default values for the session state variables."""
     for variable, default_value in session_state_defaults.items():
         if variable not in st.session_state:
             st.session_state[variable] = default_value
 
 
+def clear_cache():
+    """Clears the session state variables."""
+    keys = list(st.session_state.keys())
+    for key in keys:
+        st.session_state.pop(key)
+
+
+# %%: Functions to render the input UI
+def show_temp_success_message(message: str, delay: int):
+    """
+    Create an empty container with a success message and empty it after a delay.
+
+    Parameters
+    -----------
+    message: str
+        The success message to be displayed.
+    delay: int
+        The delay in seconds after which the container will be emptied.
+
+    Returns
+    -------
+    None (Displays a success message and then empties the container after a delay)
+    """
+    container = st.empty()
+    container.success(message)
+    time.sleep(delay)
+    container.empty()
+
+
+def render_upload_input():
+    st.subheader("Your documents")
+    uploaded_files = st.file_uploader(
+        "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+    st.session_state.uploaded_files = uploaded_files
+
+
+def manage_url_count():
+    if st.button(label="add"):
+        st.session_state.n_urls += 1
+        st.experimental_rerun()
+
+    if st.button(label="remove"):
+        if st.session_state.n_urls > 1:
+            st.session_state.n_urls -= 1
+            st.experimental_rerun()
+
+
+def render_urls_input():
+    st.subheader("Enter URLs")
+
+    # Generate a list of URLs
+    urls_list = [st.text_input("", placeholder=f"URL {i + 1}", label_visibility="collapsed")
+                 for i in range(st.session_state.n_urls)]
+    log.debug(f"{urls_list = }")
+
+    manage_url_count()
+    st.session_state.urls = urls_list
+
+
+def render_text_input():
+    st.subheader("Enter text")
+    st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
+
+
+def render_youtube_input():
+    st.subheader("YouTube Video")
+    st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
+
+
+def render_input_ui(input_option):
+    """
+    Render the input UI based on the selected input option.
+    The input options are:
+        1. Upload PDFs
+        2. Enter URLs
+        3. Enter text
+        4. YouTube Video
+
+    Parameters
+    ----------
+    input_option : str
+        The selected input option from the radio group in the sidebar.
+
+    Returns
+    -------
+    None (Updates the session state variables)
+    """
+
+    option_mapper = {
+        "Upload PDFs": render_upload_input,
+        "Enter URLs": render_urls_input,
+        "Enter text": render_text_input,
+        "YouTube Video": render_youtube_input
+    }
+
+    option_mapper[input_option]()
+
+
+# %%: Main function
 def main():
     load_dotenv()
     st.set_page_config(page_title="",
