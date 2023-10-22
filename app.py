@@ -125,7 +125,6 @@ def process_text(text, model_options_spinner) -> None:
     """
     # Starting spinner widget to show the processing status
     with st.spinner("Processing"):
-
         # Marking the start time
         start_time = time.time()
 
@@ -149,6 +148,47 @@ def process_text(text, model_options_spinner) -> None:
         show_temp_success_message(message, 5)
 
 
+# %%: Functions to render the input UI
+def render_upload_input():
+    st.subheader("Your documents")
+    uploaded_files = st.file_uploader(
+        "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+    st.session_state.uploaded_files = uploaded_files
+
+
+def manage_url_count():
+    if st.button(label="add"):
+        st.session_state.n_urls += 1
+        st.experimental_rerun()
+
+    if st.button(label="remove"):
+        if st.session_state.n_urls > 1:
+            st.session_state.n_urls -= 1
+            st.experimental_rerun()
+
+
+def render_urls_input():
+    st.subheader("Enter URLs")
+
+    # Generate a list of URLs
+    urls_list = [st.text_input("", placeholder=f"URL {i + 1}", label_visibility="collapsed")
+                 for i in range(st.session_state.n_urls)]
+    log.debug(f"{urls_list = }")
+
+    manage_url_count()
+    st.session_state.urls = urls_list
+
+
+def render_text_input():
+    st.subheader("Enter text")
+    st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
+
+
+def render_youtube_input():
+    st.subheader("YouTube Video")
+    st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
+
+
 def render_input_ui(input_option):
     """
     Render the input UI based on the selected input option.
@@ -166,39 +206,16 @@ def render_input_ui(input_option):
     Returns
     -------
     None (Updates the session state variables)
-
     """
-    if input_option == "Upload PDFs":
-        st.subheader("Your documents")
-        uploaded_files = st.file_uploader(
-            "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
-        st.session_state.uploaded_files = uploaded_files
 
-    elif input_option == "Enter URLs":
-        st.subheader("Enter URLs")
-        if st.button(label="add"):
-            st.session_state.n_urls += 1
-            st.experimental_rerun()
+    option_mapper = {
+        "Upload PDFs": render_upload_input,
+        "Enter URLs": render_urls_input,
+        "Enter text": render_text_input,
+        "YouTube Video": render_youtube_input
+    }
 
-        urls_list = []
-        for i in range(st.session_state.n_urls):
-            urls_list.append(st.text_input("", placeholder=f"URL {i + 1}", label_visibility="collapsed"))
-            print(urls_list)
-
-        if st.button(label="remove"):
-            if st.session_state.n_urls > 1:
-                st.session_state.n_urls -= 1
-                st.experimental_rerun()
-
-        st.session_state.urls = urls_list
-
-    elif input_option == 'Enter text':
-        st.subheader("Enter text")
-        st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
-
-    elif input_option == 'YouTube Video':
-        st.subheader("YouTube Video")
-        st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
+    option_mapper[input_option]()
 
 
 # %%: Functions to get raw text from different sources
