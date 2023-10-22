@@ -58,25 +58,43 @@ def show_temp_success_message(message: str, delay: int):
 
 # %%:
 def handle_userinput(user_question, container):
-    # Send the user question to the conversation chain and get the response
-    response = st.session_state.conversation({'question': user_question})
+    response = get_response(user_question)
     log.debug(f'Response: {response}')
-
-    # Get the question from the response
-    st.session_state.my_chat_history.append(response['question'])
     log.debug(f'{response["question"] = }')
 
-    # Get the helpful answer from the response
-    helpful_answer = response['answer'].split('Helpful Answer:')[-1]
-    st.session_state.my_chat_history.append(helpful_answer)
-    log.debug(f'{helpful_answer = }')
+    helpful_answer = get_helpful_answer(response)
+    update_chat_history(question=user_question, helpful_answer=helpful_answer)
 
-    # Update the chat_history in the memory with the new helpful answer
-    log.debug(f"Before: {st.session_state.conversation.memory.chat_memory.messages[-1].content = }")
+    update_memory(helpful_answer)
+    render_response_to_ui(container)
+
+
+def get_response(user_question):
+    """Send the user question to the conversation chain and get the response."""
+    return st.session_state.conversation({'question': user_question})
+
+
+def update_chat_history(question, helpful_answer):
+    """Update the chat history."""
+    st.session_state.my_chat_history.append(question)
+    st.session_state.my_chat_history.append(helpful_answer)
+
+
+def get_helpful_answer(response):
+    """Extract the helpful answer from the response."""
+    helpful_answer = response['answer'].split('Helpful Answer:')[-1]
+    log.success(f'{helpful_answer = }')
+    return helpful_answer
+
+
+def update_memory(helpful_answer):
+    """Update the chat_history in the memory with the new helpful answer."""
     st.session_state.conversation.memory.chat_memory.messages[-1].content = helpful_answer
     log.debug(f"After: {st.session_state.conversation.memory.chat_memory.messages[-1].content = }")
 
-    # Display the response in the chat
+
+def render_response_to_ui(container):
+    """Display the response in the chat."""
     for i, message in enumerate(st.session_state.my_chat_history):
         sender = "human" if i % 2 == 0 else "assistant"
         container.chat_message(sender).write(message)
