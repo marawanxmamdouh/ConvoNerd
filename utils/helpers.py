@@ -3,6 +3,8 @@ import os
 import shutil
 
 import requests
+import yaml
+from box import Box
 from loguru import logger as log
 
 
@@ -99,3 +101,30 @@ def save_file_to_folder(file_object, target_folder):
     target_file_path = os.path.join(target_folder, file_object.name)
     with open(target_file_path, 'wb') as f:
         f.write(file_object.getvalue())
+
+
+def get_config(file_name):
+    """
+    Load and return the configuration from the specified file.
+
+    Parameters
+    ----------
+    file_name: str
+        The name of the file to load the configuration from relative to the conf folder.
+
+    Returns
+    -------
+    Box
+        The configuration stored in a Box object.
+
+    Examples
+    --------
+    >>> config = get_config('example.yaml')
+    >>> print(config.database.host)
+    ... 'localhost'
+    >>> print(config.database.port)
+    ... 5432
+    """
+    with open('conf/' + file_name, 'r', encoding='utf8') as yml_file:
+        cfg = Box(yaml.safe_load(yml_file))
+    return cfg
