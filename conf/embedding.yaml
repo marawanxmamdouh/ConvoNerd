@@ -1,0 +1,3 @@
+model_name: BAAI/bge-small-en
+encode_kwargs:
+  normalize_embeddings: True

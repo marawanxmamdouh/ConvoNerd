@@ -1,0 +1,9 @@
+memory:
+  k: 1
+
+retriever:
+  k: 2
+
+conversation_chain:
+  chain_type: stuff
+  verbose: true

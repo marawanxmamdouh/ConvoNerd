@@ -4,11 +4,14 @@ from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.vectorstores.faiss import FAISS
 from loguru import logger as log
 
-# %%: Device to use
+from utils.helpers import get_config
+
+# Get the configuration
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+cfg = get_config('embedding.yaml')
 
-# %%: Vector store
+
 def get_vectorstore(text_chunks):
     """
     Retrieves a vector store created from the input text chunks using pre-trained embeddings.
@@ -49,13 +52,10 @@ def initialize_embeddings():
         The initialized HuggingFace BG E embeddings.
 
     """
-    model_name = "BAAI/bge-small-en"
-    model_kwargs = {'device': DEVICE}
-    encode_kwargs = {'normalize_embeddings': True}
     return HuggingFaceBgeEmbeddings(
-        model_name=model_name,
-        model_kwargs=model_kwargs,
-        encode_kwargs=encode_kwargs
+        model_name=cfg.model_name,
+        model_kwargs={'device': DEVICE},
+        encode_kwargs=cfg.encode_kwargs
     )
 
 

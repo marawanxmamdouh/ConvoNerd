@@ -1,6 +1,11 @@
 # Importing the necessary libraries
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+from utils.helpers import get_config
+
+# Get the configuration
+cfg = get_config('text_processing.yaml')
+
 
 def get_text_chunks(text):
     """
@@ -42,8 +47,8 @@ def initialize_text_splitter():
 
     """
     return RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
+        chunk_size=cfg.chunk_size,
+        chunk_overlap=cfg.chunk_overlap,
         length_function=len
     )
 
