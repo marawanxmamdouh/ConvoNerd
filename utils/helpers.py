@@ -8,6 +8,33 @@ from box import Box
 from loguru import logger as log
 
 
+def get_config(file_name):
+    """
+    Load and return the configuration from the specified file.
+
+    Parameters
+    ----------
+    file_name: str
+        The name of the file to load the configuration from relative to the conf folder.
+
+    Returns
+    -------
+    Box
+        The configuration stored in a Box object.
+
+    Examples
+    --------
+    >>> config = get_config('example.yaml')
+    >>> print(config.database.host)
+    ... 'localhost'
+    >>> print(config.database.port)
+    ... 5432
+    """
+    with open('conf/' + file_name, 'r', encoding='utf8') as yml_file:
+        cfg = Box(yaml.safe_load(yml_file))
+    return cfg
+
+
 def has_internet_connection():
     """
     Checks if the system has an active Internet connection by making a request to the Google homepage.
@@ -22,39 +49,6 @@ def has_internet_connection():
         return response.status_code == 200
     except (requests.ConnectionError, requests.Timeout):
         return False
-
-
-def save_uploaded_files(uploaded_files):
-    """
-    Saves uploaded files to a specified directory.
-
-    Parameters
-    ----------
-    uploaded_files : list
-        A list of file objects to be saved.
-
-    Returns
-    -------
-    None
-    """
-    base_path = 'uploaded_files'
-
-    # Delete the base_path folder if it exists
-    if os.path.isdir(base_path):
-        shutil.rmtree(base_path)
-
-    # Create the base folder if it does not exist
-    if not os.path.isdir(base_path):
-        os.mkdir(base_path)
-
-    for uploaded_file in uploaded_files:
-        target_folder = prepare_target_folder(base_path, uploaded_file.name)
-
-        # Save the uploaded file to the target folder
-        save_file_to_folder(uploaded_file, target_folder)
-
-        # show a success message for 2 seconds and then hide it.
-        log.success(f"File uploaded successfully: {uploaded_file.name}", 2)
 
 
 def prepare_target_folder(base_path, filename):
@@ -103,28 +97,38 @@ def save_file_to_folder(file_object, target_folder):
         f.write(file_object.getvalue())
 
 
-def get_config(file_name):
+# Get the configuration
+cfg = get_config('paths.yaml')
+
+
+def save_uploaded_files(uploaded_files):
     """
-    Load and return the configuration from the specified file.
+    Saves uploaded files to a specified directory.
 
     Parameters
     ----------
-    file_name: str
-        The name of the file to load the configuration from relative to the conf folder.
+    uploaded_files : list
+        A list of file objects to be saved.
 
     Returns
     -------
-    Box
-        The configuration stored in a Box object.
-
-    Examples
-    --------
-    >>> config = get_config('example.yaml')
-    >>> print(config.database.host)
-    ... 'localhost'
-    >>> print(config.database.port)
-    ... 5432
+    None
     """
-    with open('conf/' + file_name, 'r', encoding='utf8') as yml_file:
-        cfg = Box(yaml.safe_load(yml_file))
-    return cfg
+    base_path = cfg.uploaded_files_dir_path
+
+    # Delete the base_path folder if it exists
+    if os.path.isdir(base_path):
+        shutil.rmtree(base_path)
+
+    # Create the base folder if it does not exist
+    if not os.path.isdir(base_path):
+        os.mkdir(base_path)
+
+    for uploaded_file in uploaded_files:
+        target_folder = prepare_target_folder(base_path, uploaded_file.name)
+
+        # Save the uploaded file to the target folder
+        save_file_to_folder(uploaded_file, target_folder)
+
+        # show a success message for 2 seconds and then hide it.
+        log.success(f"File uploaded successfully: {uploaded_file.name}", 2)
