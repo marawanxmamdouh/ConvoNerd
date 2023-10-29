@@ -1,5 +1,6 @@
 uploaded_files_dir_path: uploaded_files
 json_dir_path: uploaded_files/json
 txt_dir_path: uploaded_files/txt
+pdf_dir_path: uploaded_files/pdf
 transcript_json_path: uploaded_files/json/transcript.json
 transcript_txt_path: uploaded_files/txt/transcript.txt

@@ -4,11 +4,16 @@ import shutil
 
 from langchain.document_loaders import PyPDFDirectoryLoader
 
+from utils.helpers import get_config
+
+# Get the configuration
+cfg = get_config('paths.yaml')
+
 
 class PDFTextExtractor:
     """Class for extracting text from PDF files."""
 
-    def __init__(self, pdf_folder_path="./uploaded_files/pdf", text_folder_path="./uploaded_files/txt"):
+    def __init__(self, pdf_folder_path=cfg.pdf_dir_path, text_folder_path=cfg.txt_dir_path):
         """
         Initializes the extractor, specifying the folders where the PDF and text files are located.
 
