@@ -36,7 +36,7 @@ session_state_defaults = {
 input_options_rg = ["Upload PDFs", "Enter URLs", "Enter text", "YouTube Video"]
 
 model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)',
-                 'Llama-2-13B-chat-GGML (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
+                 'Llama-2-13B-chat-GGUF (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
 
 
 # %%: Functions to get raw text from different sources

@@ -87,7 +87,7 @@ def get_language_model(model_name):
     """
     mapper = {
         'Llama-2-13B-chat-GPTQ (GPU required)': get_gptq_model,
-        'Llama-2-13B-chat-GGML (CPU only)': get_gguf_model,
+        'Llama-2-13B-chat-GGUF (CPU only)': get_gguf_model,
         'HuggingFace Hub (Online)': get_huggingface_model,
         'OpenAI API (Online)': get_openai_model,
         'Mistral-7B (CPU only)': get_mistral_model,
