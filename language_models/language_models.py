@@ -85,15 +85,15 @@ def get_language_model(model_name):
     Warnings
     - log (loguru): If the model name is unknown.
     """
-    if model_name == 'Llama-2-13B-chat-GPTQ (GPU required)':
-        return get_gptq_model()
-    elif model_name == 'Llama-2-13B-chat-GGML (CPU only)':
-        return get_gguf_model()
-    elif model_name == 'HuggingFace Hub (Online)':
-        return get_huggingface_model()
-    elif model_name == 'OpenAI API (Online)':
-        return get_openai_model()
-    elif model_name == 'Mistral-7B (CPU only)':
-        return get_mistral_model()
+    mapper = {
+        'Llama-2-13B-chat-GPTQ (GPU required)': get_gptq_model,
+        'Llama-2-13B-chat-GGML (CPU only)': get_gguf_model,
+        'HuggingFace Hub (Online)': get_huggingface_model,
+        'OpenAI API (Online)': get_openai_model,
+        'Mistral-7B (CPU only)': get_mistral_model,
+    }
+
+    if model_name in mapper:
+        return mapper[model_name]()
     else:
         log.error(f'Unknown model name: {model_name}')
