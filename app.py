@@ -369,13 +369,13 @@ def manage_url_count():
     # Increase the count of URL fields by one when 'add' button is clicked.
     if st.button(label="add"):
         st.session_state.n_urls += 1
-        st.experimental_rerun()
+        st.rerun()
 
     # Decrease the count of URL fields by one when the 'remove' button is clicked.
     if st.button(label="remove"):
         if st.session_state.n_urls > 1:
             st.session_state.n_urls -= 1
-            st.experimental_rerun()
+            st.rerun()
 
 
 def render_urls_input():
