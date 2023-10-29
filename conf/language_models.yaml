@@ -1,0 +1,31 @@
+do_sample: true
+
+model_config:
+  max_new_tokens: 4096
+  temperature: 0.1
+  top_p: 0.95
+  repetition_penalty: 1.15
+  context_length: 4096
+
+huggingface_model:
+  repo_id: google/flan-t5-
+
+mistral_model:
+  path: models/mistral-7b-instruct-v0.1.Q4_K_M.gguf
+
+gguf_model:
+  path: models/llama-2-13b-chat.Q4_K_M.gguf
+  type: llama
+
+gptq_model:
+  model_name: TheBloke/Llama-2-13B-chat-GPTQ
+  model_basename: model
+  use_safetensors: true
+  trust_remote_code: true
+  inject_fused_attention: true
+  quantize_config: none
+  use_fast: true
+
+gptq_streamer:
+  skip_prompt: true
+  skip_special_tokens: true

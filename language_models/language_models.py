@@ -7,11 +7,10 @@ from langchain.llms.huggingface_hub import HuggingFaceHub
 from loguru import logger as log
 from transformers import AutoTokenizer, TextStreamer, pipeline
 
-# %%: Configuration for the language models
-model_config = {
-    'max_new_tokens': 4096, 'temperature': 0.1, 'top_p': 0.95,
-    'repetition_penalty': 1.15, 'context_length': 4096
-}
+from utils.helpers import get_config
+
+# %%: Get the configuration
+cfg = get_config('language_models.yaml')
 
 # %%: Device to use
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -20,46 +19,53 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 # %%: Get language models
 def get_huggingface_model():
     """Get the HuggingFace model from the HuggingFace Hub"""
-    return HuggingFaceHub(repo_id="google/flan-t5-xxl", config=model_config)
+    return HuggingFaceHub(repo_id=cfg.huggingface_model.repo_id, config=cfg.model_config, do_sample=cfg.do_sample)
 
 
 def get_openai_model():
     """Get the OpenAI model from the OpenAI API"""
-    return ChatOpenAI(config=model_config)
+    return ChatOpenAI(config=cfg.model_config, do_sample=cfg.do_sample)
 
 
 def get_mistral_model():
     """Get the Mistral model with CTransformers"""
-    model_path = 'models/mistral-7b-instruct-v0.1.Q4_K_M.gguf'
-    return CTransformers(model=model_path, model_type='mistral', device=DEVICE, do_sample=True, config=model_config)
+    return CTransformers(model=cfg.mistral_model.path, model_type='mistral', device=DEVICE, do_sample=cfg.do_sample,
+                         config=cfg.model_config)
 
 
 def get_gguf_model():
     """Get the GGUF model with CTransformers"""
-    model_path = 'models/llama-2-13b-chat.Q4_K_M.gguf'
-    return CTransformers(model=model_path, model_type='llama', device=DEVICE, do_sample=True, config=model_config)
+    return CTransformers(model=cfg.gguf_model.path, model_type=cfg.gguf_model.type, device=DEVICE,
+                         do_sample=cfg.do_sample, config=cfg.model_config)
 
 
 def get_gptq_model():
     """Get the GPTQ model with AutoGPTQForCausalLM"""
-    model_name = 'TheBloke/Llama-2-13B-chat-GPTQ'
-    model_basename = "model"
-    model = AutoGPTQForCausalLM.from_quantized(model_name, revision="main", model_basename=model_basename,
-                                               use_safetensors=True, trust_remote_code=True,
-                                               inject_fused_attention=False,
-                                               device=DEVICE, quantize_config=None)
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-    streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+    model = AutoGPTQForCausalLM.from_quantized(cfg.gptq_model.model_name, revision="main",
+                                               model_basename=cfg.gptq_model.model_basename,
+                                               use_safetensors=cfg.gptq_model.use_safetensors,
+                                               trust_remote_code=cfg.gptq_model.trust_remote_code,
+                                               inject_fused_attention=cfg.gptq_model.inject_fused_attention,
+                                               device=DEVICE,
+                                               quantize_config=cfg.gptq_model.quantize_config)
+
+    tokenizer = AutoTokenizer.from_pretrained(cfg.gptq_model.model_name,
+                                              use_fast=cfg.gptq_model.use_fast)
+
+    streamer = TextStreamer(tokenizer, skip_prompt=cfg.gptq_streamer.skip_prompt,
+                            skip_special_tokens=cfg.gptq_streamer.skip_special_tokens)
+
     text_pipeline = pipeline("text2text-generation",
                              model=model,
                              tokenizer=tokenizer,
-                             max_new_tokens=4096,
-                             temperature=0.1,
-                             top_p=0.95,
-                             do_sample=True,
-                             repetition_penalty=1.15,
+                             max_new_tokens=cfg.model_config.max_new_tokens,
+                             temperature=cfg.model_config.temperature,
+                             top_p=cfg.model_config.top_p,
+                             do_sample=cfg.do_sample,
+                             repetition_penalty=cfg.model_config.repetition_penalty,
                              streamer=streamer)
-    return HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": 0.1})
+
+    return HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": cfg.model_config.temperature})
 
 
 def get_language_model(model_name):
