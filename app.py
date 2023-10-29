@@ -483,8 +483,7 @@ def main():
 
         if st.button("Process", use_container_width=True):
             raw_text = get_raw_text(input_option=input_option)
-            if raw_text:
-                process_text(text=raw_text, model_options_spinner=model_options_spinner)
+            process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
     # Create a form to get the user question
     with st.form(key='my_form', clear_on_submit=True):
