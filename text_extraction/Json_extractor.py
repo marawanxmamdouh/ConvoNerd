@@ -5,6 +5,11 @@ import shutil
 
 from loguru import logger as log
 
+from utils.helpers import get_config
+
+# Get the configuration
+cfg = get_config('paths.yaml')
+
 
 class JsonTextExtractor:
     """
@@ -43,7 +48,7 @@ class JsonTextExtractor:
 
     def __init__(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.directory_path = os.path.join(script_dir, '../uploaded_files/json')
+        self.directory_path = os.path.join(script_dir, '../' + cfg.json_dir_path)
         self.merged_text = []
 
     def extract_text_recursive(self, data):
@@ -143,12 +148,12 @@ class JsonTextExtractor:
         The 'txt' folder is created in the same directory as this script.
         """
         # Delete the txt folder if it exists and create a new one
-        shutil.rmtree('./uploaded_files/txt') if os.path.isdir('./uploaded_files/txt') else None
-        os.makedirs('./uploaded_files/txt')
+        shutil.rmtree(cfg.txt_dir_path) if os.path.isdir(cfg.txt_dir_path) else None
+        os.makedirs(cfg.txt_dir_path)
 
         self.load_and_merge_json_files()
 
-        with open('uploaded_files/txt/transcript.txt', 'w') as output_file:
+        with open(cfg.transcript_txt_path, 'w') as output_file:
             output_file.write(self.get_merged_text())
 
         log.info('Transcript saved as txt file')

@@ -8,6 +8,10 @@ from loguru import logger as log
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
 
 from text_extraction.Json_extractor import JsonTextExtractor
+from utils.helpers import get_config
+
+# Get the configuration
+cfg = get_config('paths.yaml')
 
 
 class YouTubeTextExtractor:
@@ -15,7 +19,7 @@ class YouTubeTextExtractor:
 
     def __init__(self):
         """Initialize the extractor, specifying the path to save the resulting transcript."""
-        self.transcript_file_path = "./uploaded_files/json/transcript.json"
+        self.transcript_json_path = cfg.transcript_json_path
 
     def extract_text(self, video_url):
         """
@@ -88,14 +92,14 @@ class YouTubeTextExtractor:
         """
         try:
             # Delete the uploaded_files folder if it exists and create a new one
-            shutil.rmtree('uploaded_files') if os.path.isdir('uploaded_files') else None
-            os.makedirs('./uploaded_files/json')
+            shutil.rmtree(cfg.uploaded_files_dir_path) if os.path.isdir(cfg.uploaded_files_dir_path) else None
+            os.makedirs(cfg.json_dir_path)
 
             # Get the transcript for the video
             transcripts = YouTubeTranscriptApi.get_transcripts([video_id])
 
             # Save the transcript to a JSON file
-            with open(f'./uploaded_files/json/transcript.json', 'w', encoding='utf-8') as json_file:
+            with open(self.transcript_json_path, 'w', encoding='utf-8') as json_file:
                 json.dump(transcripts, json_file)
 
         # Catch exceptions caused by a video having no available transcripts
@@ -106,7 +110,7 @@ class YouTubeTextExtractor:
 
     def convert_transcript_to_txt(self):
         """Convert a JSON transcript to text."""
-        if os.path.exists(self.transcript_file_path):
+        if os.path.exists(self.transcript_json_path):
             json_text_extractor = JsonTextExtractor()
             json_text_extractor.convert_transcript_to_txt()
 
@@ -119,5 +123,5 @@ class YouTubeTextExtractor:
         str
             The contents of the text file as a string.
         """
-        with open("./uploaded_files/txt/transcript.txt", "r", encoding="utf-8") as txt_file:
+        with open(cfg.transcript_txt_path, "r", encoding="utf-8") as txt_file:
             return txt_file.read()
