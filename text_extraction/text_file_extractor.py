@@ -1,11 +1,16 @@
 # Importing the necessary libraries
 from langchain.document_loaders import TextLoader
 from loguru import logger as log
+from utils.helpers import get_config
+
+
+# Get the configuration
+cfg = get_config('paths.yaml')
 
 
 class TextFileExtractor:
     """Class for extracting text from a text or markdown file."""
-    def __init__(self, txt_folder_path="./uploaded_files/txt", md_folder_path="./uploaded_files/md"):
+    def __init__(self, txt_folder_path=cfg.txt_dir_path, md_folder_path=cfg.md_dir_path):
         """
         Initialize the extractor, specifying the folders where the text and markdown files are located.
 
