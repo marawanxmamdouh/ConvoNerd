@@ -19,7 +19,8 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 # %%: Get language models
 def get_huggingface_model():
     """Get the HuggingFace model from the HuggingFace Hub"""
-    return HuggingFaceHub(repo_id=cfg.huggingface_model.repo_id, config=cfg.model_config, do_sample=cfg.do_sample)
+    # TODO: Warn if the user didn't enter a api_token
+    return HuggingFaceHub(repo_id=cfg.huggingface_model.repo_id, model_kwargs=cfg.huggingface_model.model_config)
 
 
 def get_openai_model():

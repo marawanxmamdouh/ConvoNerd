@@ -8,7 +8,13 @@ model_config:
   context_length: 4096
 
 huggingface_model:
-  repo_id: google/flan-t5-
+  repo_id: google/flan-t5-xxl
+  model_config:
+    max_new_tokens: 1024
+    temperature: 0.1
+    top_p: 0.95
+    repetition_penalty: 1.15
+    context_length: 4096
 
 mistral_model:
   path: models/mistral-7b-instruct-v0.1.Q4_K_M.gguf
