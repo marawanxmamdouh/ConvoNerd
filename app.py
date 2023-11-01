@@ -33,7 +33,7 @@ session_state_defaults = {
     "youtube_url": ""
 }
 
-input_options_rg = ["Upload PDFs", "Enter URLs", "Enter text", "YouTube Video"]
+data_source_options = ["Upload PDFs", "Enter URLs", "Enter text", "YouTube Video"]
 
 model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)',
                  'Llama-2-13B-chat-GGUF (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
@@ -188,13 +188,13 @@ def get_raw_text_from_text_area():
     return raw_text
 
 
-def get_raw_text(input_option):
+def get_raw_text(selected_data_source):
     """
     Retrieve raw text from different sources based on the selected input option.
 
     Parameters
     ----------
-    input_option: str
+    selected_data_source: str
         The selected input option from the radio group in the sidebar.
 
     Returns
@@ -212,7 +212,8 @@ def get_raw_text(input_option):
         "Enter text": get_raw_text_from_text_area,
         "YouTube Video": get_raw_text_from_youtube_video
     }
-    raw_text = input_mapper[input_option]()
+
+    raw_text = input_mapper[selected_data_source]()
 
     if not raw_text:
         log.warning("No text found in the input to process.")
@@ -469,7 +470,7 @@ def main():
         st.markdown("---")
 
         # render the input UI based on the selected input option
-        render_input_ui(input_option)
+        render_input_ui(selected_data_source)
 
         # create divider to separate the input options from the rest
         st.markdown("---")
@@ -482,7 +483,7 @@ def main():
         st.markdown("---")
 
         if st.button("Process", use_container_width=True):
-            raw_text = get_raw_text(input_option=input_option)
+            raw_text = get_raw_text(selected_data_source=selected_data_source)
             process_text(text=raw_text, model_options_spinner=model_options_spinner)
 
     # Create a form to get the user question
