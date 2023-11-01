@@ -33,7 +33,7 @@ session_state_defaults = {
     "youtube_url": ""
 }
 
-data_source_options = ["Upload PDFs", "Enter URLs", "Enter text", "YouTube Video"]
+data_source_options = ["Upload Documents", "Web Links", "Manually Enter Text", "YouTube Videos"]
 
 model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)',
                  'Llama-2-13B-chat-GGUF (CPU only)', 'HuggingFace Hub (Online)', 'OpenAI API (Online)']
@@ -42,12 +42,12 @@ model_options = ['Mistral-7B (CPU only)', 'Llama-2-13B-chat-GPTQ (GPU required)'
 # %%: Functions to get raw text from different sources
 def get_raw_text_from_youtube_video():
     """
-    Retrieves the raw text from a YouTube video.
+    Retrieves the raw text from a YouTube Video Link.
 
     Returns
     -------
     raw_text: str
-        The extracted text from the given YouTube video.
+        The extracted text from the given YouTube Video Link.
 
     Raises
     ------
@@ -207,10 +207,10 @@ def get_raw_text(selected_data_source):
     - If no text found in the input.
     """
     input_mapper = {
-        "Upload PDFs": get_raw_text_from_pdfs,
-        "Enter URLs": get_raw_text_from_urls,
-        "Enter text": get_raw_text_from_text_area,
-        "YouTube Video": get_raw_text_from_youtube_video
+        "Upload Documents": get_raw_text_from_pdfs,
+        "Web Links": get_raw_text_from_urls,
+        "Manually Enter Text": get_raw_text_from_text_area,
+        "YouTube Videos": get_raw_text_from_youtube_video
     }
 
     raw_text = input_mapper[selected_data_source]()
@@ -357,7 +357,7 @@ def show_temp_success_message(message: str, delay: int):
 
 def render_upload_input():
     """Renders a file uploader widget allowing the user to upload multiple files."""
-    st.subheader("Your documents")
+    st.subheader("Upload Documents")
     uploaded_files = st.file_uploader(
         "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
 
@@ -381,7 +381,7 @@ def manage_url_count():
 
 def render_urls_input():
     """Renders URL input fields according to the URL count managed by `manage_url_count` function."""
-    st.subheader("Enter URLs")
+    st.subheader("Enter Web Link or more")
 
     # Generate a list of URLs
     urls_list = [st.text_input("", placeholder=f"URL {i + 1}", label_visibility="collapsed")
@@ -395,8 +395,8 @@ def render_urls_input():
 
 
 def render_text_input():
-    """Renders a text area input field where the user can enter text."""
-    st.subheader("Enter text")
+    """Renders a text area input field where the user can Manually Enter Text."""
+    st.subheader("Manually Enter Text")
 
     # Store text area input in Streamlit session state.
     st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
@@ -404,20 +404,20 @@ def render_text_input():
 
 def render_youtube_input():
     """Renders a text input field where the user can enter a YouTube video URL."""
-    st.subheader("YouTube Video")
+    st.subheader("Enter YouTube Video Link")
 
     # Store YouTube URL in Streamlit session state.
-    st.session_state.youtube_url = st.text_input("Enter a YouTube video URL or ID:")
+    st.session_state.youtube_url = st.text_input("Enter a YouTube video Link or ID:")
 
 
 def render_input_ui(input_option):
     """
     Render the input UI based on the selected input option.
     The input options are:
-        1. Upload PDFs
-        2. Enter URLs
-        3. Enter text
-        4. YouTube Video
+        1. Upload Documents
+        2. Web Links
+        3. Manually Enter Text
+        4. YouTube Videos
 
     Parameters
     ----------
@@ -430,10 +430,10 @@ def render_input_ui(input_option):
     """
 
     option_mapper = {
-        "Upload PDFs": render_upload_input,
-        "Enter URLs": render_urls_input,
-        "Enter text": render_text_input,
-        "YouTube Video": render_youtube_input
+        "Upload Documents": render_upload_input,
+        "Web Links": render_urls_input,
+        "Manually Enter Text": render_text_input,
+        "YouTube Videos": render_youtube_input
     }
 
     option_mapper[input_option]()
@@ -442,29 +442,29 @@ def render_input_ui(input_option):
 # %%: Main function
 def main():
     load_dotenv()
-    st.set_page_config(page_title="",
-                       page_icon=":books:")
+    st.set_page_config(page_title="AI Chat Assistant",
+                       page_icon=":speech_balloon:")
 
     # Define the state of the app
     initialize_session_state_defaults()
 
-    st.header("Chat with your documents")
+    st.header("Start a conversation with Your Data")
     chat_body = st.container()
     chat_body.markdown("---")
 
     # Create a toggle button to show/hide the chat history object in session state
     if st.session_state.conversation:
-        view_messages = st.expander("View the chain's chat history object", expanded=False)
+        view_messages = st.expander("Show chat history object", expanded=False)
         with view_messages:
             st.write(st.session_state.my_chat_history)
 
         # Add a button to clear the chat history and the conversation chain
-        st.button("Clear chat history", on_click=clear_cache)
+        st.button("Clear Chat History", on_click=clear_cache)
 
     with st.sidebar:
         # create a radio group for the different input options
-        st.subheader("Input options")
-        input_option = st.radio("", input_options_rg, on_change=clear_cache)
+        st.subheader("Select Your Data Source")
+        selected_data_source = st.selectbox("Select a Data Source", data_source_options, on_change=clear_cache)
 
         # create divider to separate the input options from the rest
         st.markdown("---")
@@ -476,8 +476,8 @@ def main():
         st.markdown("---")
 
         # Create a radio group for the different models
-        st.subheader("Select a Model")
-        model_options_spinner = st.selectbox("", model_options)
+        st.subheader("Choose a Language Model")
+        model_options_spinner = st.selectbox("Select a Language Model", model_options)
 
         # create divider to separate the input options from the rest
         st.markdown("---")
@@ -488,8 +488,8 @@ def main():
 
     # Create a form to get the user question
     with st.form(key='my_form', clear_on_submit=True):
-        user_question = st.text_input(label="Ask a question about your documents:")
-        submit_button = st.form_submit_button(label='Submit')
+        user_question = st.text_input(label="Ask a Question About Your Data:")
+        submit_button = st.form_submit_button(label='Ask')
 
     if (user_question or submit_button) and st.session_state.conversation:
         handle_userinput(user_question, chat_body)
