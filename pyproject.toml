@@ -26,6 +26,7 @@ python-magic = "^0.4.27"
 libmagic = "^1.0"
 pillow = "^10.1.0"
 python-box = "^7.1.1"
+loguru = "^0.7.2"
 
 
 [build-system]
