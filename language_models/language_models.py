@@ -87,11 +87,11 @@ def get_language_model(model_name):
     - log (loguru): If the model name is unknown.
     """
     mapper = {
-        'Llama-2-13B-chat-GPTQ (GPU required)': get_gptq_model,
-        'Llama-2-13B-chat-GGUF (CPU only)': get_gguf_model,
-        'HuggingFace Hub (Online)': get_huggingface_model,
+        'Llama-2-13B GPTQ (GPU)': get_gptq_model,
+        'Llama-2-13B GGUF (CPU)': get_gguf_model,
+        'HuggingFace API (Online)': get_huggingface_model,
         'OpenAI API (Online)': get_openai_model,
-        'Mistral-7B (CPU only)': get_mistral_model,
+        'Mistral-7B (CPU)': get_mistral_model,
     }
 
     if model_name in mapper:
