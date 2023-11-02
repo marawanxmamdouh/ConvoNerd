@@ -278,7 +278,6 @@ def handle_userinput(user_question, container):
     """
     response = get_response(user_question)
     log.debug(f'Response: {response}')
-    log.debug(f'{response["question"] = }')
 
     helpful_answer = get_helpful_answer(response)
     update_chat_history(question=user_question, helpful_answer=helpful_answer)
@@ -308,7 +307,6 @@ def get_helpful_answer(response):
 def update_memory(helpful_answer):
     """Update the chat_history in the memory with the new helpful answer."""
     st.session_state.conversation.memory.chat_memory.messages[-1].content = helpful_answer
-    log.debug(f"After: {st.session_state.conversation.memory.chat_memory.messages[-1].content = }")
 
 
 def render_response_to_ui(container):
@@ -384,9 +382,8 @@ def render_urls_input():
     st.subheader("Enter Web Link or more")
 
     # Generate a list of URLs
-    urls_list = [st.text_input("", placeholder=f"URL {i + 1}", label_visibility="collapsed")
+    urls_list = [st.text_input("URL", placeholder=f"URL {i + 1}", label_visibility="collapsed")
                  for i in range(st.session_state.n_urls)]
-    log.debug(f"{urls_list = }")
 
     manage_url_count()
 
@@ -448,7 +445,7 @@ def main():
     # Define the state of the app
     initialize_session_state_defaults()
 
-    st.header("Start a conversation with Your Data")
+    st.header("Start a conversation with Your Data 🦜")
     chat_body = st.container()
     chat_body.markdown("---")
 
@@ -464,7 +461,7 @@ def main():
     with st.sidebar:
         # create a radio group for the different input options
         st.subheader("Select Your Data Source")
-        selected_data_source = st.selectbox("Select a Data Source", data_source_options, on_change=clear_cache)
+        selected_data_source = st.selectbox("Data Source", data_source_options, on_change=clear_cache)
 
         # create divider to separate the input options from the rest
         st.markdown("---")
@@ -477,7 +474,7 @@ def main():
 
         # Create a radio group for the different models
         st.subheader("Choose a Language Model")
-        model_options_spinner = st.selectbox("Select a Language Model", model_options)
+        model_options_spinner = st.selectbox("Language Model", model_options)
 
         # create divider to separate the input options from the rest
         st.markdown("---")
