@@ -6,3 +6,8 @@
 /models/*
 !/models/Model Download Instructions.md
 
+conversation/__pycache__/
+embedding/__pycache__/
+language_models/__pycache__/
+text_extraction/__pycache__/
+utils/__pycache__/
