@@ -440,7 +440,7 @@ def render_input_ui(input_option):
 def main():
     load_dotenv()
     st.set_page_config(page_title="AI Chat Assistant",
-                       page_icon=":speech_balloon:")
+                       page_icon="logo.png")
 
     # Define the state of the app
     initialize_session_state_defaults()
@@ -459,6 +459,8 @@ def main():
         st.button("Clear Chat History", on_click=clear_cache)
 
     with st.sidebar:
+        st.title("ConvoNerd")
+        st.image("logo.png", use_column_width=True)
         # create a radio group for the different input options
         st.subheader("Select Your Data Source")
         selected_data_source = st.selectbox("Data Source", data_source_options, on_change=clear_cache)
