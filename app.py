@@ -1,17 +1,21 @@
 # Importing the necessary libraries
 import time
 from http.client import InvalidURL
+from typing import Any, Callable
 
 import streamlit as st
 import torch
 from dotenv import load_dotenv
+from langchain.schema import Document
+from langchain.vectorstores.faiss import FAISS
 from loguru import logger as log
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 from youtube_transcript_api import TranscriptsDisabled
 
 from conversation.conversation_chain import create_conversation_chain
 from embedding.text_processing import get_text_chunks
 from embedding.vector_store import get_vectorstore
-from language_models.language_models import get_language_model
+from language_models.language_models import get_language_model, LanguageModel
 from text_extraction.pdf_extractor import PDFTextExtractor
 from text_extraction.text_file_extractor import TextFileExtractor
 from text_extraction.url_extractor import URLTextExtractor
@@ -23,7 +27,7 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 log.info(f"Using device: {DEVICE}")
 
 # %%: Configuration for the app
-session_state_defaults = {
+session_state_defaults: dict[str, Any] = {
     "uploaded_files": None,
     "conversation": None,
     "my_chat_history": [],
@@ -33,20 +37,20 @@ session_state_defaults = {
     "youtube_url": ""
 }
 
-data_source_options = ["Upload Documents", "Web Links", "Manually Enter Text", "YouTube Videos"]
+data_source_options: list[str] = ["Upload Documents", "Web Links", "Manually Enter Text", "YouTube Videos"]
 
-model_options = ['Mistral-7B (CPU)', 'Llama-2-13B GPTQ (GPU)',
-                 'Llama-2-13B GGUF (CPU)', 'HuggingFace API (Online)', 'OpenAI API (Online)']
+model_options: list[str] = ['Mistral-7B (CPU)', 'Llama-2-13B GPTQ (GPU)',
+                            'Llama-2-13B GGUF (CPU)', 'HuggingFace API (Online)', 'OpenAI API (Online)']
 
 
 # %%: Functions to get raw text from different sources
-def get_raw_text_from_youtube_video():
+def get_raw_text_from_youtube_video() -> str | None:
     """
     Retrieves the raw text from a YouTube Video Link.
 
     Returns
     -------
-    raw_text: str
+    raw_text: str | None
         The extracted text from the given YouTube Video Link.
 
     Raises
@@ -65,13 +69,13 @@ def get_raw_text_from_youtube_video():
     """
     if not has_internet_connection():
         st.warning("Please check your internet connection and try again.")
-        return
+        return None
 
     if not st.session_state.youtube_url:
         st.warning("Please enter a YouTube video URL or ID first")
-        return
+        return None
 
-    youtube_extractor = YouTubeTextExtractor()
+    youtube_extractor: YouTubeTextExtractor = YouTubeTextExtractor()
     try:
         return youtube_extractor.extract_text(st.session_state.youtube_url)
     except TranscriptsDisabled:
@@ -82,13 +86,13 @@ def get_raw_text_from_youtube_video():
         st.warning(f"Something went wrong. Please try again later.\nError: {e}")
 
 
-def get_raw_text_from_urls():
+def get_raw_text_from_urls() -> list[Document] | None:
     """
     Retrieve raw text from a list of URLs.
 
     Returns
     -------
-    extracted_text: str
+    extracted_text: str | None
         The extracted text from the given URLs.
 
     Raises
@@ -105,19 +109,19 @@ def get_raw_text_from_urls():
     - If the given URLs are invalid.
     - If an unexpected error occurs during the extraction process.
     """
-    urls = st.session_state.urls
+    urls: list[str] = st.session_state.urls
 
     if not has_internet_connection():
         st.warning("Please check your internet connection and try again.")
-        return
+        return None
 
     if not urls or all(url == "" for url in urls):
         st.warning("Please enter at least one URL")
-        return
+        return None
 
     try:
-        extractor = URLTextExtractor(urls)
-        extracted_text = extractor.extract_text_from_urls()
+        extractor: URLTextExtractor = URLTextExtractor(urls)
+        extracted_text: list[Document] = extractor.extract_text_from_urls()
     except InvalidURL:
         log.warning("URLs are invalid, please check your input and try again.")
         st.warning("URLs are invalid, please check your input and try again.")
@@ -128,7 +132,7 @@ def get_raw_text_from_urls():
         return extracted_text
 
 
-def get_raw_text_from_pdfs():
+def get_raw_text_from_pdfs() -> list[str] | None:
     """
     Retrieve raw text from a list of PDFs.
 
@@ -147,20 +151,20 @@ def get_raw_text_from_pdfs():
     - If no files are uploaded.
     - If the file type is not supported.
     """
-    uploaded_files = st.session_state.uploaded_files
+    uploaded_files: UploadedFile | list[UploadedFile] = st.session_state.uploaded_files
 
     if not uploaded_files:
         st.warning("Please upload your files first and click on 'Process'")
-        return
+        return None
 
     save_uploaded_files(uploaded_files)
-    raw_text = []
+    raw_text: list[str | Document] = []
     for doc in uploaded_files:
         if doc.type == 'application/pdf':
-            pdf_extractor = PDFTextExtractor()
+            pdf_extractor: PDFTextExtractor = PDFTextExtractor()
             raw_text.extend(pdf_extractor.extract_text())
         elif doc.type == 'text/plain' or doc.type == 'application/octet-stream':
-            txt_extractor = TextFileExtractor()
+            txt_extractor: TextFileExtractor = TextFileExtractor()
             raw_text.extend(txt_extractor.extract_text(doc.name))
         else:
             st.warning(f"File type not supported yet {doc.name}")
@@ -168,13 +172,13 @@ def get_raw_text_from_pdfs():
     return raw_text
 
 
-def get_raw_text_from_text_area():
+def get_raw_text_from_text_area() -> str | None:
     """
     Retrieve raw text from the text area.
 
     Returns
     -------
-    raw_text: str
+    raw_text: str | None
         The text from the text area.
 
     Warnings
@@ -184,11 +188,12 @@ def get_raw_text_from_text_area():
     raw_text = st.session_state.text_area_input
     if not raw_text:
         st.warning("Please enter some text first")
+        return None
 
     return raw_text
 
 
-def get_raw_text(selected_data_source):
+def get_raw_text(selected_data_source: str) -> str | list[str | Document] | None:
     """
     Retrieve raw text from different sources based on the selected input option.
 
@@ -206,23 +211,24 @@ def get_raw_text(selected_data_source):
     --------
     - If no text found in the input.
     """
-    input_mapper = {
+    input_mapper: dict[str, Callable] = {
         "Upload Documents": get_raw_text_from_pdfs,
         "Web Links": get_raw_text_from_urls,
         "Manually Enter Text": get_raw_text_from_text_area,
         "YouTube Videos": get_raw_text_from_youtube_video
     }
 
-    raw_text = input_mapper[selected_data_source]()
+    raw_text: str | list[str | Document] | None = input_mapper[selected_data_source]()
 
     if not raw_text:
         log.warning("No text found in the input to process.")
+        return None
 
     return raw_text
 
 
 # %%: Process the input text and create a conversation chain
-def process_text(text, model_options_spinner) -> None:
+def process_text(text: str | list[str | Document], model_options_spinner: str) -> None:
     """
     Process the input text and create a conversation chain.
     Also, save the conversation chain in the session state,
@@ -230,7 +236,7 @@ def process_text(text, model_options_spinner) -> None:
 
     Parameters
     ----------
-    text: str | list of documents
+    text: str | list[str | Document]
         The input text to be processed.
     model_options_spinner: str
         The selected model option for language models.
@@ -242,16 +248,16 @@ def process_text(text, model_options_spinner) -> None:
     # Starting spinner widget to show the processing status
     with st.spinner("Processing"):
         # Marking the start time
-        start_time = time.time()
+        start_time: float = time.time()
 
         # Splitting text into chunks
-        text_chunks = get_text_chunks(text)
+        text_chunks: list[str] | list[Document] = get_text_chunks(text)
 
         # Creating a vectorstore from text chunks
-        vectorstore = get_vectorstore(text_chunks)
+        vectorstore: FAISS = get_vectorstore(text_chunks)
 
         # Getting the language model
-        language_model = get_language_model(model_options_spinner)
+        language_model: LanguageModel = get_language_model(model_options_spinner)
 
         # Creating a conversation chain and saving it in the session state
         st.session_state.conversation = create_conversation_chain(
@@ -260,12 +266,13 @@ def process_text(text, model_options_spinner) -> None:
         )
 
         # Displaying a temporary success message with processing time, disappears after 5 seconds
-        message = f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds"
+        message: str = f"Processing done!\n Time taken: {round(time.time() - start_time, 2)} Seconds"
         show_temp_success_message(message, 5)
+        log.success(message)
 
 
 # %%: Functions to handle the user input (questions)
-def handle_userinput(user_question, container):
+def handle_userinput(user_question: str, container) -> None:
     """
     Handles the user's input question and updates relevant components accordingly.
 
@@ -286,30 +293,30 @@ def handle_userinput(user_question, container):
     render_response_to_ui(container)
 
 
-def get_response(user_question):
+def get_response(user_question: str):
     """Send the user question to the conversation chain and get the response."""
     return st.session_state.conversation({'question': user_question})
 
 
-def update_chat_history(question, helpful_answer):
+def update_chat_history(question: str, helpful_answer: str) -> None:
     """Update the chat history."""
     st.session_state.my_chat_history.append(question)
     st.session_state.my_chat_history.append(helpful_answer)
 
 
-def get_helpful_answer(response):
+def get_helpful_answer(response: dict) -> str:
     """Extract the helpful answer from the response."""
     helpful_answer = response['answer'].split('Helpful Answer:')[-1]
     log.success(f'{helpful_answer = }')
     return helpful_answer
 
 
-def update_memory(helpful_answer):
+def update_memory(helpful_answer: str) -> None:
     """Update the chat_history in the memory with the new helpful answer."""
     st.session_state.conversation.memory.chat_memory.messages[-1].content = helpful_answer
 
 
-def render_response_to_ui(container):
+def render_response_to_ui(container) -> None:
     """Display the response in the chat."""
     for i, message in enumerate(st.session_state.my_chat_history):
         sender = "human" if i % 2 == 0 else "assistant"
@@ -317,14 +324,14 @@ def render_response_to_ui(container):
 
 
 # %%: Handle the session state variables
-def initialize_session_state_defaults():
+def initialize_session_state_defaults() -> None:
     """Initializes the default values for the session state variables."""
     for variable, default_value in session_state_defaults.items():
         if variable not in st.session_state:
             st.session_state[variable] = default_value
 
 
-def clear_cache():
+def clear_cache() -> None:
     """Clears the session state variables."""
     keys = list(st.session_state.keys())
     for key in keys:
@@ -332,7 +339,7 @@ def clear_cache():
 
 
 # %%: Functions to render the input UI
-def show_temp_success_message(message: str, delay: int):
+def show_temp_success_message(message: str, delay: int) -> None:
     """
     Create an empty container with a success message and empty it after a delay.
 
@@ -353,7 +360,7 @@ def show_temp_success_message(message: str, delay: int):
     container.empty()
 
 
-def render_upload_input():
+def render_upload_input() -> None:
     """Renders a file uploader widget allowing the user to upload multiple files."""
     st.subheader("Upload Documents")
     uploaded_files = st.file_uploader(
@@ -363,7 +370,7 @@ def render_upload_input():
     st.session_state.uploaded_files = uploaded_files
 
 
-def manage_url_count():
+def manage_url_count() -> None:
     """Manages the count of URL input fields based on the user's interactions with 'add' and 'remove' buttons."""
     # Increase the count of URL fields by one when 'add' button is clicked.
     if st.button(label="add"):
@@ -377,13 +384,13 @@ def manage_url_count():
             st.rerun()
 
 
-def render_urls_input():
+def render_urls_input() -> None:
     """Renders URL input fields according to the URL count managed by `manage_url_count` function."""
     st.subheader("Enter Web Link or more")
 
     # Generate a list of URLs
-    urls_list = [st.text_input("URL", placeholder=f"URL {i + 1}", label_visibility="collapsed")
-                 for i in range(st.session_state.n_urls)]
+    urls_list: list[str] = [st.text_input("URL", placeholder=f"URL {i + 1}", label_visibility="collapsed")
+                            for i in range(st.session_state.n_urls)]
 
     manage_url_count()
 
@@ -391,7 +398,7 @@ def render_urls_input():
     st.session_state.urls = urls_list
 
 
-def render_text_input():
+def render_text_input() -> None:
     """Renders a text area input field where the user can Manually Enter Text."""
     st.subheader("Manually Enter Text")
 
@@ -399,7 +406,7 @@ def render_text_input():
     st.session_state.text_area_input = st.text_area("Enter your text here", height=200)
 
 
-def render_youtube_input():
+def render_youtube_input() -> None:
     """Renders a text input field where the user can enter a YouTube video URL."""
     st.subheader("Enter YouTube Video Link")
 
@@ -407,7 +414,7 @@ def render_youtube_input():
     st.session_state.youtube_url = st.text_input("Enter a YouTube video Link or ID:")
 
 
-def render_input_ui(input_option):
+def render_input_ui(input_option) -> None:
     """
     Render the input UI based on the selected input option.
     The input options are:
@@ -426,7 +433,7 @@ def render_input_ui(input_option):
     None (Updates the session state variables)
     """
 
-    option_mapper = {
+    option_mapper: dict[str, Callable] = {
         "Upload Documents": render_upload_input,
         "Web Links": render_urls_input,
         "Manually Enter Text": render_text_input,
@@ -483,7 +490,10 @@ def main():
 
         if st.button("Process", use_container_width=True):
             raw_text = get_raw_text(selected_data_source=selected_data_source)
-            process_text(text=raw_text, model_options_spinner=model_options_spinner)
+            if raw_text:
+                process_text(text=raw_text, model_options_spinner=model_options_spinner)
+            else:
+                st.warning("No text found in the input to process.")
 
     # Create a form to get the user question
     with st.form(key='my_form', clear_on_submit=True):
