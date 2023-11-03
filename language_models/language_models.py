@@ -9,38 +9,41 @@ from transformers import AutoTokenizer, TextStreamer, pipeline
 
 from utils.helpers import get_config
 
-# %%: Get the configuration
+# Get the configuration
 cfg = get_config('language_models.yaml')
 
 # %%: Device to use
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+# %%: Create a type alias for the language models
+LanguageModel = HuggingFacePipeline | CTransformers | ChatOpenAI
+
 
 # %%: Get language models
-def get_huggingface_model():
+def get_huggingface_model() -> HuggingFaceHub:
     """Get the HuggingFace model from the HuggingFace Hub"""
     # TODO: Warn if the user didn't enter a api_token
     return HuggingFaceHub(repo_id=cfg.huggingface_model.repo_id, model_kwargs=cfg.huggingface_model.model_config)
 
 
-def get_openai_model():
+def get_openai_model() -> ChatOpenAI:
     """Get the OpenAI model from the OpenAI API"""
     return ChatOpenAI(config=cfg.model_config, do_sample=cfg.do_sample)
 
 
-def get_mistral_model():
+def get_mistral_model() -> CTransformers:
     """Get the Mistral model with CTransformers"""
     return CTransformers(model=cfg.mistral_model.path, model_type='mistral', device=DEVICE, do_sample=cfg.do_sample,
                          config=cfg.model_config)
 
 
-def get_gguf_model():
+def get_gguf_model() -> CTransformers:
     """Get the GGUF model with CTransformers"""
     return CTransformers(model=cfg.gguf_model.path, model_type=cfg.gguf_model.type, device=DEVICE,
                          do_sample=cfg.do_sample, config=cfg.model_config)
 
 
-def get_gptq_model():
+def get_gptq_model() -> HuggingFacePipeline:
     """Get the GPTQ model with AutoGPTQForCausalLM"""
     model = AutoGPTQForCausalLM.from_quantized(cfg.gptq_model.model_name, revision="main",
                                                model_basename=cfg.gptq_model.model_basename,
@@ -69,7 +72,7 @@ def get_gptq_model():
     return HuggingFacePipeline(pipeline=text_pipeline, model_kwargs={"temperature": cfg.model_config.temperature})
 
 
-def get_language_model(model_name):
+def get_language_model(model_name: str) -> LanguageModel | None:
     """
     Get a language model based on the given name.
 
@@ -86,7 +89,7 @@ def get_language_model(model_name):
     Warnings
     - log (loguru): If the model name is unknown.
     """
-    mapper = {
+    mapper: dict[str, LanguageModel] = {
         'Llama-2-13B GPTQ (GPU)': get_gptq_model,
         'Llama-2-13B GGUF (CPU)': get_gguf_model,
         'HuggingFace API (Online)': get_huggingface_model,
@@ -98,3 +101,4 @@ def get_language_model(model_name):
         return mapper[model_name]()
     else:
         log.error(f'Unknown model name: {model_name}')
+        return None

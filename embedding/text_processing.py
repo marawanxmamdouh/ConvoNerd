@@ -1,42 +1,45 @@
 # Importing the necessary libraries
+from typing import List
+
+from box import Box
+from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from utils.helpers import get_config
 
 # Get the configuration
-cfg = get_config('text_processing.yaml')
+cfg: Box = get_config('text_processing.yaml')
 
 
-def get_text_chunks(text):
+def get_text_chunks(data: str | list[Document]) -> list[str] | list[Document]:
     """
-    Splits the input text into chunks using a text splitter.
+    Splits the input data into chunks using a text splitter.
 
     Parameters
     ----------
-    text: str or List[List[str]]
-        A string containing a document to be split,
-        or a list of lists where each sublist contains documents represented as list of sentences.
+    data: str or list[Document]
+        A string containing the document to be split,
+        or a list of documents where each document is represented as a list of sentences.
 
     Returns
     -------
-    chunks: List[str] or List[List[str]]
-        A list of chunks from the original text if input text is a string,
-        or list of lists where each sublist contains chunks from original document if input is list of lists.
+    chunks: list[str] | list[Document]
+        A list of chunks from the original text.
 
     """
     # Initialize the text splitter
-    text_splitter = initialize_text_splitter()
+    text_splitter: RecursiveCharacterTextSplitter = initialize_text_splitter()
 
     # Check if the text is a string
-    if isinstance(text, str):
-        chunks = split_text(text, text_splitter)
+    if isinstance(data, str):
+        chunks: list[str] = split_text(data, text_splitter)
     else:
-        chunks = split_documents(text, text_splitter)
+        chunks: list[Document] = split_documents(data, text_splitter)
 
     return chunks
 
 
-def initialize_text_splitter():
+def initialize_text_splitter() -> RecursiveCharacterTextSplitter:
     """
     Initializes the text splitter using specific parameters.
 
@@ -53,14 +56,14 @@ def initialize_text_splitter():
     )
 
 
-def split_text(text, text_splitter):
+def split_text(text: str, text_splitter: RecursiveCharacterTextSplitter) -> list[str]:
     """
     Splits a document into chunks.
 
     Parameters
     ----------
     text: str
-        A string containing the document to be split.
+        A string containing the text data to be split.
     text_splitter: RecursiveCharacterTextSplitter
         An instance of RecursiveCharacterTextSplitter.
 
@@ -68,26 +71,25 @@ def split_text(text, text_splitter):
     -------
     chunks : List[str]
         A list of chunks from the original text.
-
     """
     return text_splitter.split_text(text)
 
 
-def split_documents(text, text_splitter):
+def split_documents(documents: list[Document], text_splitter: RecursiveCharacterTextSplitter) -> list[Document]:
     """
     Splits a list of documents into chunks.
 
     Parameters
     ----------
-    text: List[List[str]]
+    documents: list[Document]
         A list of documents where each document is represented as a list of sentences.
     text_splitter: RecursiveCharacterTextSplitter
         An instance of RecursiveCharacterTextSplitter.
 
     Returns
     -------
-    chunks: List[List[str]]
+    chunks: list[Document]
         A list of chunks from the original documents.
 
     """
-    return text_splitter.split_documents(text)
+    return text_splitter.split_documents(documents)

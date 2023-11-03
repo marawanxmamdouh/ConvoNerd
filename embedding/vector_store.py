@@ -1,6 +1,8 @@
 # Importing the necessary libraries
 import torch
+from box import Box
 from langchain.embeddings import HuggingFaceBgeEmbeddings
+from langchain.schema import Document
 from langchain.vectorstores.faiss import FAISS
 from loguru import logger as log
 
@@ -9,18 +11,18 @@ from utils.helpers import get_config
 # Get the configuration
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-cfg = get_config('embedding.yaml')
+# Get the configuration
+cfg: Box = get_config('embedding.yaml')
 
 
-def get_vectorstore(text_chunks):
+def get_vectorstore(text_chunks: list[str] | list[Document]) -> FAISS | None:
     """
     Retrieves a vector store created from the input text chunks using pre-trained embeddings.
 
     Parameters
     ----------
-    text_chunks: List[str] or List[List[str]]
-        A list of strings where each string is a piece of text to be processed,
-        or a list of lists where each sub-list is a document represented by a list of sentences.
+    text_chunks: list[str] | list[Document]
+         A list of chunks from the original text.
 
     Returns
     -------
@@ -31,18 +33,18 @@ def get_vectorstore(text_chunks):
     --------
     - If the input text_chunks is empty.
     """
-    vectorstore = None
-    embeddings = initialize_embeddings()
+    embeddings: HuggingFaceBgeEmbeddings = initialize_embeddings()
 
-    if text_chunks:
-        vectorstore = create_vector_store(text_chunks, embeddings)
-    else:
+    if not text_chunks:
         log.warning(f'Your input is empty: {len(text_chunks)}. Please use a different input and try again.')
+        return None
+
+    vectorstore: FAISS = create_vector_store(text_chunks, embeddings)
 
     return vectorstore
 
 
-def initialize_embeddings():
+def initialize_embeddings() -> HuggingFaceBgeEmbeddings:  # pragma: no cover
     """
     Initializes the embeddings using a pre-trained HuggingFace BG E model.
 
@@ -59,15 +61,14 @@ def initialize_embeddings():
     )
 
 
-def create_vector_store(text_chunks, embeddings):
+def create_vector_store(text_chunks: list[str] | list[Document], embeddings: HuggingFaceBgeEmbeddings) -> FAISS:
     """
     Creates a FAISS vector store for the input text chunks using the provided embeddings.
 
     Parameters
     ----------
-    text_chunks: List[str] or List[List[str]]
-        A list of strings where each string is a piece of text to be processed,
-        or a list of lists where each sub-list is a document represented by a list of sentences.
+    text_chunks: list[str] or list[Document]
+         A list of chunks from the original text.
     embeddings: HuggingFaceBgeEmbeddings
         The initialized embeddings.
 
