@@ -8,7 +8,7 @@ from box import Box
 from loguru import logger as log
 
 
-def get_config(file_name):
+def get_config(file_name: str) -> Box:
     """
     Load and return the configuration from the specified file.
 
@@ -31,11 +31,11 @@ def get_config(file_name):
     ... 5432
     """
     with open('conf/' + file_name, 'r', encoding='utf8') as yml_file:
-        cfg = Box(yaml.safe_load(yml_file))
+        cfg: Box = Box(yaml.safe_load(yml_file))
     return cfg
 
 
-def has_internet_connection():
+def has_internet_connection() -> bool:
     """
     Checks if the system has an active Internet connection by making a request to the Google homepage.
 
@@ -51,7 +51,7 @@ def has_internet_connection():
         return False
 
 
-def prepare_target_folder(base_path, filename):
+def prepare_target_folder(base_path: str, filename: str) -> str:
     """
     Prepare the target folder for saving the file by creating sub-folders based on file types.
 
@@ -68,8 +68,8 @@ def prepare_target_folder(base_path, filename):
       The path of the target folder.
     """
     # Create the sub-folder for the file type if it doesn't exist
-    file_extension = os.path.splitext(filename)[1]
-    target_folder = os.path.join(base_path, file_extension.lstrip('.'))
+    file_extension: str = os.path.splitext(filename)[1]
+    target_folder: str = os.path.join(base_path, file_extension.lstrip('.'))
 
     if not os.path.isdir(target_folder):
         os.mkdir(target_folder)
@@ -77,13 +77,13 @@ def prepare_target_folder(base_path, filename):
     return target_folder
 
 
-def save_file_to_folder(file_object, target_folder):
+def save_file_to_folder(file_object, target_folder: str) -> None:
     """
     Save the given file object to the specified folder.
 
     Parameters
     ----------
-    file_object: File Object
+    file_object: UploadedFile | list[UploadedFile]
         The file object to be saved.
     target_folder: str
         The target folder where the file object is to be saved.
@@ -101,20 +101,20 @@ def save_file_to_folder(file_object, target_folder):
 cfg = get_config('paths.yaml')
 
 
-def save_uploaded_files(uploaded_files):
+def save_uploaded_files(uploaded_files) -> None:
     """
     Saves uploaded files to a specified directory.
 
     Parameters
     ----------
-    uploaded_files : list
+    uploaded_files: UploadedFile | list[UploadedFile]
         A list of file objects to be saved.
 
     Returns
     -------
     None
     """
-    base_path = cfg.uploaded_files_dir_path
+    base_path: str = cfg.uploaded_files_dir_path
 
     # Delete the base_path folder if it exists
     if os.path.isdir(base_path):
@@ -125,7 +125,7 @@ def save_uploaded_files(uploaded_files):
         os.mkdir(base_path)
 
     for uploaded_file in uploaded_files:
-        target_folder = prepare_target_folder(base_path, uploaded_file.name)
+        target_folder: str = prepare_target_folder(base_path, uploaded_file.name)
 
         # Save the uploaded file to the target folder
         save_file_to_folder(uploaded_file, target_folder)
