@@ -3,12 +3,13 @@ import json
 import os
 import shutil
 
+from box import Box
 from loguru import logger as log
 
 from utils.helpers import get_config
 
 # Get the configuration
-cfg = get_config('paths.yaml')
+cfg: Box = get_config('paths.yaml')
 
 
 class JsonTextExtractor:
@@ -19,7 +20,7 @@ class JsonTextExtractor:
     ----------
     directory_path : str
         The directory path where the JSON files are located.
-    merged_text : list
+    merged_text : list[str]
         A list to store the merged text from the JSON files.
 
     Methods
@@ -47,11 +48,11 @@ class JsonTextExtractor:
     """
 
     def __init__(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.directory_path = os.path.join(script_dir, '../' + cfg.json_dir_path)
-        self.merged_text = []
+        script_dir: str = os.path.dirname(os.path.abspath(__file__))
+        self.directory_path: str = os.path.join(script_dir, '../' + cfg.json_dir_path)
+        self.merged_text: list[str] = []
 
-    def extract_text_recursive(self, data):
+    def extract_text_recursive(self, data: dict | list) -> None:
         """
         Recursively extracts text from a JSON data structure.
         Extracts all the text in the json `text` key in the data object and appends it to the `merged_text` list.
@@ -75,7 +76,7 @@ class JsonTextExtractor:
             for item in data:
                 self.extract_text_recursive(item)
 
-    def load_and_merge_json_files(self):
+    def load_and_merge_json_files(self) -> None:
         """
         Load and merge multiple JSON files from a directory.
 
@@ -86,15 +87,16 @@ class JsonTextExtractor:
         ---------
             directory_path (str): The path to the directory containing the JSON files.
 
-        Raises
-        ------
-            valueError: If the directory path is invalid or does not exist.
-
         Returns
         -------
             None: The merged JSON data is stored in the object's instance variable.
 
-        Example Usage:
+        Raises
+        ------
+            valueError: If the directory path is invalid or does not exist.
+
+        Examples
+        --------
         >>> extractor = JsonTextExtractor()
         >>> extractor.load_and_merge_json_files(directory_path="/path/to/directory")
         """
@@ -102,17 +104,17 @@ class JsonTextExtractor:
             raise ValueError(f"Invalid directory path: {self.directory_path}")
 
         for filename in os.listdir(self.directory_path):
-            file_path = os.path.join(self.directory_path, filename)
+            file_path: str = os.path.join(self.directory_path, filename)
 
             if os.path.isfile(file_path) and filename.lower().endswith('.json'):
                 try:
                     with open(file_path, 'r') as json_file:
-                        data = json.load(json_file)
+                        data: dict | list = json.load(json_file)
                         self.extract_text_recursive(data)
                 except json.JSONDecodeError as e:
                     log.error(f"Error decoding JSON in file {file_path}: {e}")
 
-    def get_merged_text(self):
+    def get_merged_text(self) -> str:
         """
         Get the merged text.
 
@@ -126,7 +128,7 @@ class JsonTextExtractor:
         """
         return " ".join(self.merged_text)
 
-    def convert_transcript_to_txt(self):
+    def convert_transcript_to_txt(self) -> None:
         """
         Converts transcript JSON files to a TXT file and saves it in the txt folder.
 

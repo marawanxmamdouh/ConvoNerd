@@ -1,8 +1,9 @@
 # Importing the necessary libraries
 from langchain.document_loaders import TextLoader
+from langchain.schema import Document
 from loguru import logger as log
-from utils.helpers import get_config
 
+from utils.helpers import get_config
 
 # Get the configuration
 cfg = get_config('paths.yaml')
@@ -10,7 +11,8 @@ cfg = get_config('paths.yaml')
 
 class TextFileExtractor:
     """Class for extracting text from a text or markdown file."""
-    def __init__(self, txt_folder_path=cfg.txt_dir_path, md_folder_path=cfg.md_dir_path):
+
+    def __init__(self, txt_folder_path: str = cfg.txt_dir_path, md_folder_path: str = cfg.md_dir_path):
         """
         Initialize the extractor, specifying the folders where the text and markdown files are located.
 
@@ -21,10 +23,10 @@ class TextFileExtractor:
         md_folder_path: str, optional.
             The folder path where the markdown files are located. Default is "./uploaded_files/md".
         """
-        self.txt_folder_path = txt_folder_path
-        self.md_folder_path = md_folder_path
+        self.txt_folder_path: str = txt_folder_path
+        self.md_folder_path: str = md_folder_path
 
-    def extract_text(self, file_name):
+    def extract_text(self, file_name: str) -> list[Document]:
         """
         Extracts the text from a given file.
 
@@ -44,15 +46,15 @@ class TextFileExtractor:
             If no files were found.
         """
         if file_name:
-            file_path = self.get_file_path(file_name)
-            loader = TextLoader(file_path)
-            extracted_text = loader.load()
+            file_path: str = self.get_file_path(file_name)
+            loader: TextLoader = TextLoader(file_path)
+            extracted_text: list[Document] = loader.load()
             return extracted_text
         else:
             log.error("No files found.")
             raise FileNotFoundError("No files found.")
 
-    def get_file_path(self, file_name):
+    def get_file_path(self, file_name: str) -> str:
         """
         Get the file path based on the file type (text or markdown).
 
