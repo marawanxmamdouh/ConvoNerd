@@ -132,14 +132,14 @@ def get_raw_text_from_urls() -> list[Document] | None:
         return extracted_text
 
 
-def get_raw_text_from_pdfs() -> list[str] | None:
+def get_raw_text_from_docs() -> list[str] | None:
     """
-    Retrieve raw text from a list of PDFs.
+    Retrieve raw text from a list of documents.
 
     Returns
     -------
     raw_text: str
-        The extracted text from the given PDFs.
+        The extracted text from the given documents.
 
     Raises
     ------
@@ -212,7 +212,7 @@ def get_raw_text(selected_data_source: str) -> str | list[str | Document] | None
     - If no text found in the input.
     """
     input_mapper: dict[str, Callable] = {
-        "Upload Documents": get_raw_text_from_pdfs,
+        "Upload Documents": get_raw_text_from_docs,
         "Web Links": get_raw_text_from_urls,
         "Manually Enter Text": get_raw_text_from_text_area,
         "YouTube Videos": get_raw_text_from_youtube_video
@@ -364,7 +364,7 @@ def render_upload_input() -> None:
     """Renders a file uploader widget allowing the user to upload multiple files."""
     st.subheader("Upload Documents")
     uploaded_files = st.file_uploader(
-        "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+        "Upload your documents here and click on 'Process'", accept_multiple_files=True)
 
     # Store uploaded files in Streamlit session state.
     st.session_state.uploaded_files = uploaded_files
@@ -504,7 +504,7 @@ def main():
         handle_userinput(user_question, chat_body)
 
     elif user_question and not st.session_state.conversation:
-        st.error("Please upload your PDFs first and click on 'Process'")
+        st.warning("Please process your data first, then ask a question.")
 
 
 if __name__ == '__main__':
