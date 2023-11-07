@@ -364,7 +364,7 @@ def render_upload_input() -> None:
     """Renders a file uploader widget allowing the user to upload multiple files."""
     st.subheader("Upload Documents")
     uploaded_files = st.file_uploader(
-        "Upload your documents here and click on 'Process'", accept_multiple_files=True)
+        "Upload your documents here and click on 'Process'", accept_multiple_files=True, type=['pdf', 'txt', 'md'])
 
     # Store uploaded files in Streamlit session state.
     st.session_state.uploaded_files = uploaded_files
