@@ -29,7 +29,6 @@ gptq_model:
   use_safetensors: true
   trust_remote_code: true
   inject_fused_attention: true
-  quantize_config: none
   use_fast: true
 
 gptq_streamer:

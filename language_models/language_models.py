@@ -51,7 +51,7 @@ def get_gptq_model() -> HuggingFacePipeline:
                                                trust_remote_code=cfg.gptq_model.trust_remote_code,
                                                inject_fused_attention=cfg.gptq_model.inject_fused_attention,
                                                device=DEVICE,
-                                               quantize_config=cfg.gptq_model.quantize_config)
+                                               quantize_config=None)
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.gptq_model.model_name,
                                               use_fast=cfg.gptq_model.use_fast)
