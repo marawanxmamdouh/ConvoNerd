@@ -9,7 +9,7 @@ from loguru import logger as log
 from utils.helpers import get_config
 
 # Get the configuration
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 # Get the configuration
 cfg: Box = get_config('embedding.yaml')

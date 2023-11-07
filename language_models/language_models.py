@@ -13,7 +13,7 @@ from utils.helpers import get_config
 cfg = get_config('language_models.yaml')
 
 # %%: Device to use
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 # %%: Create a type alias for the language models
 LanguageModel = HuggingFacePipeline | CTransformers | ChatOpenAI
