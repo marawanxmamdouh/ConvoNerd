@@ -39,7 +39,7 @@ session_state_defaults: dict[str, Any] = {
 
 data_source_options: list[str] = ["Upload Documents", "Web Links", "Manually Enter Text", "YouTube Videos"]
 
-model_options: list[str] = ['Mistral-7B (CPU)', 'Llama-2-13B GPTQ (GPU)',
+model_options: list[str] = ['Mistral-7B (CPU)', 'Llama-2-7B GPTQ (GPU)',
                             'Llama-2-13B GGUF (CPU)', 'HuggingFace API (Online)', 'OpenAI API (Online)']
 
 

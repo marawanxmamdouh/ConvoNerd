@@ -24,7 +24,7 @@ gguf_model:
   type: llama
 
 gptq_model:
-  model_name: TheBloke/Llama-2-13B-chat-GPTQ
+  model_name: TheBloke/Llama-2-7B-chat-GPTQ
   model_basename: model
   use_safetensors: true
   trust_remote_code: true

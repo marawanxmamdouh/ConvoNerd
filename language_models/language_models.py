@@ -90,7 +90,7 @@ def get_language_model(model_name: str) -> LanguageModel | None:
     - log (loguru): If the model name is unknown.
     """
     mapper: dict[str, LanguageModel] = {
-        'Llama-2-13B GPTQ (GPU)': get_gptq_model,
+        'Llama-2-7B GPTQ (GPU)': get_gptq_model,
         'Llama-2-13B GGUF (CPU)': get_gguf_model,
         'HuggingFace API (Online)': get_huggingface_model,
         'OpenAI API (Online)': get_openai_model,
