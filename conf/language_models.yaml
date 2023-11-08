@@ -17,7 +17,7 @@ huggingface_model:
     context_length: 4096
 
 mistral_model:
-  path: models/mistral-7b-instruct-v0.1.Q4_K_M.gguf
+  path: models/zephyr-7b-alpha.Q5_K_M.gguf
 
 gguf_model:
   path: models/llama-2-13b-chat.Q4_K_M.gguf
