@@ -5,8 +5,7 @@ including Retrieval-Augmented Generation (RAG), this tool empowers you to ask qu
 and explore your data interactively. Enjoy the convenience of a user-friendly interface and the flexibility 
 to choose your language model, all while running efficiently on standard CPU hardware.
 
-![ConvoNerd Demo](media/demo.mp4)
-
+https://github.com/marawanxmamdouh/ConvoNerd/assets/55720454/72bc8897-d2d8-439e-8774-ff2813377949
 
 ## Table of Contents
 
