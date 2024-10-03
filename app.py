@@ -506,6 +506,129 @@ def main():
     elif user_question and not st.session_state.conversation:
         st.warning("Please process your data first, then ask a question.")
 
+from googletrans import Translator
+
+def translate_text(input_text: str, target_lang: str) -> str:
+    translator = Translator()
+    try:
+        translated = translator.translate(input_text, dest=target_lang)
+        return translated.text
+    except Exception as e:
+        log.error(f"Translation failed: {e}")
+        st.warning(f"Translation failed. Please try again later.\nError: {e}")
+        return input_text
+
+def render_language_selector():
+    st.subheader("Translate Text (Optional)")
+    target_language = st.selectbox("Choose Target Language", options=["en", "es", "fr", "de", "hi", "zh"])
+    return target_language
+
+from transformers import pipeline
+
+def summarize_text(input_text: str) -> str:
+    summarizer = pipeline("summarization")
+    try:
+        summary = summarizer(input_text, max_length=100, min_length=30, do_sample=False)
+        return summary[0]['summary_text']
+    except Exception as e:
+        log.error(f"Summarization failed: {e}")
+        st.warning(f"Summarization failed. Please try again later.\nError: {e}")
+        return input_text
+
+
+import pyttsx3
+
+def text_to_speech(input_text: str) -> None:
+    engine = pyttsx3.init()
+    try:
+        engine.say(input_text)
+        engine.runAndWait()
+    except Exception as e:
+        log.error(f"Text-to-speech failed: {e}")
+        st.warning(f"Text-to-speech failed. Please try again later.\nError: {e}")
+
+from transformers import pipeline
+
+def extract_entities(input_text: str) -> list:
+    ner_pipeline = pipeline("ner", grouped_entities=True)
+    try:
+        entities = ner_pipeline(input_text)
+        return entities
+    except Exception as e:
+        log.error(f"NER failed: {e}")
+        st.warning(f"Entity Recognition failed. Please try again later.\nError: {e}")
+        return []
+
+def analyze_sentiment(input_text: str) -> str:
+    sentiment_pipeline = pipeline("sentiment-analysis")
+    try:
+        result = sentiment_pipeline(input_text)
+        sentiment = result[0]["label"]
+        return sentiment
+    except Exception as e:
+        log.error(f"Sentiment analysis failed: {e}")
+        st.warning(f"Sentiment analysis failed. Please try again later.\nError: {e}")
+        return "Unknown"
+
+import yake
+
+def extract_keywords(input_text: str) -> list[str]:
+    try:
+        kw_extractor = yake.KeywordExtractor()
+        keywords = kw_extractor.extract_keywords(input_text)
+        return [kw[0] for kw in keywords]
+    except Exception as e:
+        log.error(f"Keyword extraction failed: {e}")
+        st.warning(f"Keyword extraction failed. Please try again later.\nError: {e}")
+        return []
+
+def main():
+    load_dotenv()
+    
+    st.sidebar.title("Text Processing App")
+    input_option = st.sidebar.radio("Select input method", data_source_options)
+    model_option = st.sidebar.selectbox("Choose Model", model_options)
+    
+    # Language Translation
+    target_language = render_language_selector()
+    
+    # Render input based on selection
+    render_input_ui(input_option)
+    
+    # Process the raw text
+    if st.button("Process"):
+        raw_text = get_raw_text(input_option)
+        
+        # Translate if necessary
+        if raw_text and target_language != "en":
+            raw_text = translate_text(raw_text, target_language)
+        
+        # Summarize if requested
+        if st.checkbox("Generate Summary"):
+            raw_text = summarize_text(raw_text)
+        
+        # Sentiment Analysis
+        if st.checkbox("Analyze Sentiment"):
+            sentiment = analyze_sentiment(raw_text)
+            st.write(f"Sentiment: {sentiment}")
+        
+        # Entity Recognition
+        if st.checkbox("Extract Entities"):
+            entities = extract_entities(raw_text)
+            st.write(f"Entities: {entities}")
+        
+        # Keyword Extraction
+        if st.checkbox("Extract Keywords"):
+            keywords = extract_keywords(raw_text)
+            st.write(f"Keywords: {keywords}")
+        
+        # Text-to-Speech
+        if st.checkbox("Listen to the Text"):
+            text_to_speech(raw_text)
+        
+        # Process conversation as before
+        process_text(raw_text, model_option)
+
 
 if __name__ == '__main__':
     main()
